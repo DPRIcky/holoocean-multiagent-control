@@ -253,6 +253,58 @@ steps:
     depends_on:
       - py310-sensors
 
+  - name: Update_Docs_repo 
+    image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
+    volumes:
+      - name: docker_sock
+        path: /var/run/docker.sock
+    commands:
+      - git clone https://github.com/byu-holoocean/holoocean-docs.git
+      - pip3 install bs4 sphinx-build sphinx-rtd-theme sphinx-copybutton autodocsumm
+      - export PATH="/home/ue4/.local/bin:$PATH"
+      - python3 client/docmaker.py
+      - mkdir -p holoocean-docs/${DRONE_TAG}
+      - cp -r docs holoocean-docs/${DRONE_TAG}
+      - cd holoocean-docs
+      - python3 new_version.py ${DRONE_TAG}
+      - python3 Sidebar_version_links.py ${DRONE_TAG}
+      - git add .
+      - git commit -m "Update to version ${DRONE_TAG}"
+      - git reset --soft HEAD~2
+      - git commit -m "Update to version ${DRONE_TAG}"
+      - git push -f
+    depends_on:
+      - build_docker
+    when:
+      event:
+        - tag
+
+  - name: Update_Docs_repo_develop
+    image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
+    volumes:
+      - name: docker_sock
+        path: /var/run/docker.sock
+    commands:
+      - git clone https://github.com/byu-holoocean/holoocean-docs.git
+      - pip3 install bs4 sphinx sphinx-rtd-theme sphinx-copybutton autodocsumm
+      - export PATH="/home/ue4/.local/bin:$PATH"
+      - python3 client/docmaker.py
+      - rm -rf holoocean-docs/develop
+      - mv docs holoocean-docs/develop
+      - cd holoocean-docs
+      - python3 Sidebar_version_links.py develop
+      - git add .
+      - git commit -m "Update to develop"
+      - git reset --soft HEAD~2
+      - git commit -m "Update to develop"
+      - git push -f
+
+    depends_on:
+      - build_docker
+    when:
+      branch:
+        - develop
+
   ## Clean up docker image off of the server
   - name: remove-docker-image
     image: docker:latest
