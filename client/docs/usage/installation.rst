@@ -17,7 +17,13 @@ Requirements
 - pip3
 - Linux or Windows 64bit
 - Preferably a competent GPU
-- For Linux: OpenGL 3+
+- For Linux: OpenGL 3+, gcc (minimum build-essential package) 
+
+For the build-essential package for Linux, you can run the following console command:
+
+::
+
+   sudo apt install build-essential
 
 Stable Installation
 =====================
@@ -38,13 +44,18 @@ From the cloned repo, do the following:
    pip install .
 
 
-Then to install the most recent version of the oceans package, run the python command 
+Then to install the most recent version of the oceans package, open a python shell by typing the following and hit enter
+
+::
+
+   python
+
+Then run the python command in that python shell
 
 ::
 
    import holoocean
    holoocean.install("Ocean")
-
 
 Or as a single console command,
 

@@ -30,7 +30,7 @@ Clone the repo, then
 
 (requires >= Python 3.6)
 
-See [Installation](https://holoocean.readthedocs.io/en/latest/usage/installation.html) for complete instructions (including Docker).
+See [Installation](https://byu-holoocean.github.io/holoocean-docs/usage/installation.html) for complete instructions (including Docker).
 
 ## Documentation
 * [Quickstart](https://byu-holoocean.github.io/holoocean-docs/usage/getting-started.html)
