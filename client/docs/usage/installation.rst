@@ -22,18 +22,18 @@ Requirements
 Stable Installation
 =====================
 
-To align ourselves with the Unreal Engine EULA, we no longer offer HoloOcean through pypi. However, 
+In accordance with the Unreal Engine EULA we can no longer offer HoloOcean through pypi. However, 
 installing HoloOcean is still fairly simple, but requires a few more steps. First, follow the steps 
 here to link your github account with Unreal: https://www.unrealengine.com/en-US/ue-on-github 
-Note: The account web page may have been updated, currently the label for connections is named 
-"Apps and Accounts". This requires you to accept their EULA.
+Note: The account web page may have been updated, currently the label for connections is named "Apps and 
+Accounts". 
+This requires you accept their EULA.
 
-To install, like with the Beta installation, clone the repo, and pip install with the local version as
-described below:
+Then, download or clone our repo at: https://github.com/byu-holoocean/HoloOcean
+From the cloned repo, do the following:
 
 ::
 
-   git clone https://bitbucket.org/frostlab/holoocean/
    cd holoocean/client
    pip install .
 
@@ -43,14 +43,14 @@ Then to install the most recent version of the oceans package, run the python co
 ::
 
    import holoocean
-   holoocean.install("Ocean", branch="develop")
+   holoocean.install("Ocean")
 
 
 Or as a single console command,
 
 ::
 
-   python -c `import holoocean; holoocean.install("Ocean", branch="develop")`
+   python -c `import holoocean; holoocean.install("Ocean")`
 
 
 
@@ -67,20 +67,11 @@ Beta Installation
    then you will need to uninstall the binary by running ``holoocean.remove("Ocean")`` before proceeding. 
    Failure to do so may result in unpredictable behavior.
 
-To use the latest version of HoloOcean, you can install and use HoloOcean simply
-by cloning the `bitbucket.org/frostlab/holoocean`_, and ensuring it is on your
-``sys.path``.
-
-.. _`bitbucket.org/frostlab/holoocean`: https://bitbucket.org/frostlab/holoocean/
-
-The ``master`` branch is kept in sync with the pip repository, the ``develop``
-branch is the bleeding edge of development.
-
 To install the develop branch, simply run
 
 ::
 
-   git clone https://bitbucket.org/frostlab/holoocean/
+   git clone https://github.com/byu-holoocean/HoloOcean.
    cd holoocean/client
    git checkout develop
    pip install .
@@ -122,7 +113,7 @@ Install a Package Automatically
    >>> packagemanager.install("Ocean")
    Installing Ocean ver. 0.1.0 from https://robots.et.byu.edu/holo/Ocean/v0.1.0/Linux.zip
    File size: 1.55 GB
-   |████████████████████████| 100%
+   |â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ| 100%
    Unpacking worlds...
    Finished.
    >>> packagemanager.installed_packages()
