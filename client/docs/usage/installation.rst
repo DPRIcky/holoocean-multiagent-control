@@ -29,13 +29,22 @@ Stable Installation
 =====================
 
 In accordance with the Unreal Engine EULA we can no longer offer HoloOcean through pypi. However, 
-installing HoloOcean is still fairly simple, but requires a few more steps. First, follow the steps 
-here to link your github account with Unreal: https://www.unrealengine.com/en-US/ue-on-github 
+installing HoloOcean is still fairly simple, but requires a few more steps.
+
+First, follow the steps here to link your github account with Unreal: https://www.unrealengine.com/en-US/ue-on-github 
 Note: The account web page may have been updated, currently the label for connections is named "Apps and 
 Accounts". 
 This requires you accept their EULA.
 
 Then, download or clone our repo at: https://github.com/byu-holoocean/HoloOcean
+**Note**: If you get a Page Not Found Error, it's because you didn't link your github account to your Epic Games account. Please refer to the previous paragraph, and link the accounts.
+
+We suggest cloning it with lowercase naming, as our example code uses, like so:
+
+::
+
+   git clone git@github.com:byu-holoocean/HoloOcean.git holoocean
+
 From the cloned repo, do the following:
 
 ::
