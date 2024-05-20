@@ -181,17 +181,17 @@ def test_obstructed_view(env):
 
 def test_distance_noise(env):
     """Tests to ensure that noise generation for max distance is functional"""
-    num_tests = 50
+    num_tests = 100
     tests_passed = 0
 
     env._scenario["agents"] = [
         {
             "agent_name": "uav0",
-            "agent_type": "UavAgent",
+            "agent_type": "HoveringAUV",
             "sensors": [
                 {
                     "sensor_type": "OpticalModemSensor",
-                    "configuration": {"MaxDistance": 3.8, "DistanceSigma": 1.5},
+                    "configuration": {"MaxDistance": 3.5, "DistanceSigma": 1.5},
                 }
             ],
             "control_scheme": 1,
@@ -200,7 +200,7 @@ def test_distance_noise(env):
         },
         {
             "agent_name": "uav1",
-            "agent_type": "UavAgent",
+            "agent_type": "HoveringAUV",
             "sensors": [{"sensor_type": "OpticalModemSensor"}],
             "control_scheme": 1,
             "location": [-10, 7, 0.25],
