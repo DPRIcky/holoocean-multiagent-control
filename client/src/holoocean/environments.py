@@ -5,11 +5,13 @@ editor.
 It specifies an environment, which contains a number of agents, and the interface for communicating
 with the agents.
 """
+
 import atexit
 import os
 import random
 import subprocess
 import sys
+import copy
 
 import numpy as np
 
@@ -144,18 +146,19 @@ class HoloOceanEnvironment:
         if ticks_per_sec is not None:
             self._ticks_per_sec = ticks_per_sec
         # otherwise use one in scenario
-        elif "ticks_per_sec" in scenario:
+        elif scenario is not None and "ticks_per_sec" in scenario:
             self._ticks_per_sec = scenario["ticks_per_sec"]
         # default to 30
         else:
             self._ticks_per_sec = 30
 
         # If one wasn't passed in, use one in scenario
-        if frames_per_sec is None and "frames_per_sec" in scenario:
-            frames_per_sec = scenario["frames_per_sec"]
-        # default to true
-        else:
-            frames_per_sec = True
+        if frames_per_sec is None :
+            if scenario is not None and "frames_per_sec" in scenario:
+                frames_per_sec = scenario["frames_per_sec"]
+            #  default to true
+            else:
+                frames_per_sec = True
 
         # parse frames_per_sec
         if frames_per_sec is True:
@@ -298,6 +301,7 @@ class HoloOceanEnvironment:
                     "existing": False,
                     "Hz": self._ticks_per_sec,
                     "lcm_channel": None,
+                    "ros_publish": False,
                 }
                 # Overwrite the default values with what is defined in the scenario config
                 sensor_config.update(sensor)
@@ -339,6 +343,9 @@ class HoloOceanEnvironment:
                     globals()["lcm"] = __import__("lcm")
                     self._lcm = lcm.LCM(self._scenario["lcm_provider"])
 
+                # Update the scenario of the enviornment to match the sensor_config with defaults applied
+                sensor.update(sensor_config)
+
             # Default values for an agent
             agent_config = {
                 "location": [0, 0, 0],
@@ -355,8 +362,8 @@ class HoloOceanEnvironment:
             if "main_agent" in self._scenario:
                 is_main_agent = self._scenario["main_agent"] == agent["agent_name"]
 
-            agent_location = agent_config["location"]
-            agent_rotation = agent_config["rotation"]
+            agent_location = copy.deepcopy(agent_config["location"])
+            agent_rotation = copy.deepcopy(agent_config["rotation"])
 
             # Randomize the agent start location
             dx = agent_config["location_randomization"][0]
@@ -423,12 +430,12 @@ class HoloOceanEnvironment:
                 sensor.reset()
 
         self.tick(
-            publish=False
+            publish=False, tick_clock=False
         )  # Must tick once to send reset before sending spawning commands
         self.tick(
-            publish=False
+            publish=False, tick_clock=False
         )  # Bad fix to potential race condition. See issue BYU-PCCL/holodeck#224
-        self.tick(publish=False)
+        self.tick(publish=False, tick_clock=False)
         # Clear command queue
         if self._command_center.queue_size > 0:
             print(
@@ -455,7 +462,7 @@ class HoloOceanEnvironment:
             self._default_state_fn = self._get_full_state
 
         for _ in range(self._pre_start_steps + 1):
-            self.tick(publish=False)
+            self.tick(publish=False, tick_clock=False)
 
         return self._default_state_fn()
 
@@ -521,7 +528,7 @@ class HoloOceanEnvironment:
         """
         return self.agents[agent_name].get_joint_constraints(joint_name)
 
-    def tick(self, num_ticks=1, publish=True):
+    def tick(self, num_ticks=1, publish=True, tick_clock=True):
         """Ticks the environment once. Normally used for multi-agent environments.
 
         Args:
@@ -548,9 +555,10 @@ class HoloOceanEnvironment:
 
             state = self._default_state_fn()
 
-            self._tick_sensor()
-            self._num_ticks += 1
-
+            # Clock will not advance if the tick_clock is false (pre_start_steps in reset() so clock starts at 0)
+            if tick_clock:
+                self._tick_sensor()
+                self._num_ticks += 1
             if publish and self._lcm is not None:
                 self._publish(state)
 
@@ -917,7 +925,7 @@ class HoloOceanEnvironment:
         if hasattr(self, "_exited"):
             return
 
-        if hasattr(self,"_client"):
+        if hasattr(self, "_client"):
             self._client.unlink()
         if hasattr(self, "_world_process"):
             self._world_process.kill()

@@ -1,8 +1,8 @@
 {
     "name": "TestWorlds",
     "platform": "Linux",
-    "version": "1.0.0",
-    "path": "LinuxNoEditor/Holodeck/Binaries/Linux/Holodeck",
+    "version": "2.0.0",
+    "path": "Linux/Holodeck/Binaries/Linux/Holodeck",
     "worlds": [
         {
             "name" : "ExampleLevel",

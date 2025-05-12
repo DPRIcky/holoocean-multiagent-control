@@ -2,7 +2,11 @@
 engine/Content/DesertRuins
 engine/Content/ForestCollection
 engine/Content/Worlds
+engine/Content/WorldsHowdy
 !engine/Content/StarterContent
+engine/Saved/Crashes
+engine/Saved/Config/CrashReportClient
+engine/Saved/logs
 
 *.VC.db
 
@@ -43,13 +47,15 @@ engine/dist/
 
 
 # Keep the build scripts folder
-!engine/Build/ContinuousIntegration/*.sh
 # Builds
+!engine/Build/
 engine/Build/*
+!engine/Build/ContinuousIntegration
+!engine/Build/ContinuousIntegration/*.sh
 engine/dist/*
 
 # Don't ignore icon files in Build
-!engine/Build/**/*.ico
+# !engine/Build/**/*.ico
 
 # Compiled source files for the engine to use
 engine/Intermediate/*
@@ -98,6 +104,7 @@ pip-wheel-metadata
 **/*.egg-info
 !tests/worlds
 
-docs
+
 holoocean-docs
 holoocean-docs/*
+!client/docs

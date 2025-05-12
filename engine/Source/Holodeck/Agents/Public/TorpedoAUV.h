@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Containers/Array.h"
-#include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Pawn.h"
 #include "HolodeckBuoyantAgent.h"
 #include "TorpedoAUV.generated.h"
@@ -13,8 +12,6 @@ const float TAUV_MAX_THRUST = 100;
 const float TAUV_MIN_FIN = -45;
 const float TAUV_MAX_FIN = 45;
 
-const float TAUV_MAX_LIN_ACCEL = 10;
-const float TAUV_MAX_ANG_ACCEL = 2;
 
 UCLASS()
 /**
@@ -48,16 +45,16 @@ public:
 	// Allows agent to fall up to ~8 meters
 	float GetAccelerationLimit() override { return 200; }
 
-	// Location of all forces to apply
+	// Location of all forces to apply. All in cm (unreal units)
 	FVector thruster = FVector(-120,0,0);
-	TArray<FVector> finTranslation{ FVector(-105,7.07,0),
-									FVector(-105,0,7.07),
-									FVector(-105,-7.07,0),
-									FVector(-105,0,-7.07) };
-	TArray<FRotator> finRotation{ 	FRotator(0,0,0),
-									FRotator(0,0,-90),
-									FRotator(0,0,-180),
-									FRotator(0,0,-270) };
+	TArray<FVector> finTranslation{ FVector(-105,  7.07, 0   ),
+									FVector(-105,  0,    7.07),
+									FVector(-105, -7.07, 0   ),
+									FVector(-105,  0,   -7.07) };
+	TArray<FRotator> finRotation{ 	FRotator(0, 0,  0  ), // Rotator objects use the convention (pitch, yaw, roll), and we want roll for these
+									FRotator(0, 0, -90 ),
+									FRotator(0, 0, -180),
+									FRotator(0, 0, -270) };
 
 	void ApplyFin(int i, float command);
 

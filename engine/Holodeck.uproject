@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "4.27",
+	"EngineAssociation": "5.3",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -13,8 +13,14 @@
 			]
 		}
 	],
+	"Plugins": [
+		{
+			"Name": "RapidJson",
+			"Enabled": false
+		}
+	],
 	"TargetPlatforms": [
-		"LinuxNoEditor",
-		"WindowsNoEditor"
+		"Linux",
+		"Windows"
 	]
 }

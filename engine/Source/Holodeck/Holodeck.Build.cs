@@ -17,7 +17,26 @@ public class Holodeck : ModuleRules
              "Holodeck/Tasks/Public"
          });
 
-        PublicDependencyModuleNames.AddRange(new [] {"ApplicationCore", "Core", "CoreUObject", "Engine", "InputCore", "AIModule", "SlateCore", "Slate", "PhysX", "APEX", "Json", "JsonUtilities", "RenderCore", "RHI", "Landscape" });
+        PublicDependencyModuleNames.AddRange(new []
+        {
+	        "ApplicationCore", 
+	        "Core", 
+	        "CoreUObject", 
+	        "Engine", 
+	        "InputCore", 
+	        "AIModule", 
+	        "SlateCore", 
+	        "Slate", 
+	        "Json", 
+	        "JsonUtilities", 
+	        "RenderCore", 
+	        "RHI", 
+	        "Landscape",
+	        "ImageWrapper",
+	        "Renderer",
+	        "Sockets",
+	        "Networking"
+        });
 
 #if PLATFORM_LINUX
         PublicDependencyModuleNames.AddRange(new [] { "rt", "pthread" };

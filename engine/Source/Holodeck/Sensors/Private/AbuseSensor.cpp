@@ -35,9 +35,13 @@ void UAbuseSensor::ParseSensorParms(FString ParmsJson) {
 
 void UAbuseSensor::TickSensorComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
 	if (Agent != nullptr && bOn) {
-		int32 Abused = (int32)Agent->IsAbused;
+		int32 Abused = 0;
+		
+		if(Agent->IsAbused){
+			Abused = 1;
+		}
 
-		if (!Abused && AccelerationLimit != -1) {
+		if (!(Abused == 1) && AccelerationLimit != -1) {
 			FVector CurrentSpeed = Agent->GetVelocity();
 			
 			// a = (delta v / delta t)

@@ -4,19 +4,23 @@ name: default
 
 steps:
   - name: Build Editor
-    image: adamrehn/ue4-full:4.27.2_10June2023
+    image: ghcr.io/epicgames/unreal-engine:dev-slim-5.3.2
     commands:
       - cd engine
+      - pip3 install ue4cli
+      - export PATH="/home/ue4/.local/bin:$PATH"
       - bash Build/ContinuousIntegration/build_project.sh
       - echo "The commit builds"
     depends_on:
       - clone
 
   - name: Package Project
-    image: adamrehn/ue4-full:4.27.2_10June2023
+    image: ghcr.io/epicgames/unreal-engine:dev-slim-5.3.2
     commands:
       - cd engine
-      - bash Build/ContinuousIntegration/package_ue4_project.sh "TestWorlds" ${DRONE_COMMIT:0:7}
+      - pip3 install ue4cli
+      - export PATH="/home/ue4/.local/bin:$PATH"
+      - bash Build/ContinuousIntegration/package_ue5_project.sh "TestWorlds" ${DRONE_COMMIT:0:7}
       - echo "The pull request was successfully packaged"
     depends_on:
       - Build Editor
@@ -90,6 +94,10 @@ steps:
       - tox -e py37-agents
     depends_on:
       - install_package
+    when:
+      branch:
+        - release
+        - develop
    
   - name: py37-lcm
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -98,6 +106,10 @@ steps:
       - tox -e py37-lcm
     depends_on:
       - py37-agents
+    when:
+      branch:
+        - release
+        - develop
 
   - name: py37-scenarios
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -106,6 +118,10 @@ steps:
       - tox -e py37-scenarios
     depends_on:
       - py37-lcm
+    when:
+      branch:
+        - release
+        - develop
 
   # Test Python 3.8
   - name: py38-agents
@@ -115,6 +131,10 @@ steps:
       - tox -e py38-agents
     depends_on:
       - install_package
+    when:
+      branch:
+        - release
+        - develop
 
   - name: py38-lcm
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -123,6 +143,10 @@ steps:
       - tox -e py38-lcm
     depends_on:
       - py38-agents
+    when:
+      branch:
+        - release
+        - develop
 
   - name: py38-scenarios
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -131,6 +155,10 @@ steps:
       - tox -e py38-scenarios
     depends_on:
       - py38-lcm
+    when:
+      branch:
+        - release
+        - develop
 
   # Test Python 3.9
   - name: py39-agents
@@ -140,6 +168,11 @@ steps:
       - tox -e py39-agents
     depends_on:
       - install_package
+      - py37-scenarios
+    when:
+      branch:
+        - release
+        - develop
 
   - name: py39-lcm
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -148,6 +181,10 @@ steps:
       - tox -e py39-lcm
     depends_on:
       - py39-agents
+    when:
+      branch:
+        - release
+        - develop
 
   - name: py39-scenarios
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -156,6 +193,10 @@ steps:
       - tox -e py39-scenarios
     depends_on:
       - py39-lcm
+    when:
+      branch:
+        - release
+        - develop
 
   # Test Python 3.10
   - name: py310-agents
@@ -165,6 +206,11 @@ steps:
       - tox -e py310-agents
     depends_on:
       - install_package
+      - py38-scenarios
+    when:
+      branch:
+        - release
+        - develop
 
   - name: py310-lcm
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -173,6 +219,10 @@ steps:
       - tox -e py310-lcm
     depends_on:
       - py310-agents
+    when:
+      branch:
+        - release
+        - develop
 
   - name: py310-scenarios
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -181,6 +231,10 @@ steps:
       - tox -e py310-scenarios
     depends_on:
       - py310-lcm
+    when:
+      branch:
+        - release
+        - develop
 
   # Test Python 3.11
   - name: py311-agents
@@ -190,6 +244,7 @@ steps:
       - tox -e py311-agents
     depends_on:
        - install_package
+       - py39-scenarios
 
   - name: py311-lcm
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -220,6 +275,10 @@ steps:
       - py39-scenarios
       - py310-scenarios
       - py311-scenarios
+    when:
+      branch:
+        - release
+        - develop
 
   - name: py38-sensors
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -228,6 +287,10 @@ steps:
       - tox -e py38-sensors
     depends_on:
       - py37-sensors
+    when:
+      branch:
+        - release
+        - develop
 
   - name: py39-sensors
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -236,6 +299,10 @@ steps:
       - tox -e py39-sensors
     depends_on:
       - py38-sensors
+    when:
+      branch:
+        - release
+        - develop
 
   - name: py310-sensors
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -244,6 +311,10 @@ steps:
       - tox -e py310-sensors
     depends_on:
       - py39-sensors
+    when:
+      branch:
+        - release
+        - develop
 
   - name: py311-sensors
     image: "byu-holoocean/holoocean:${DRONE_COMMIT:0:7}"
@@ -251,6 +322,7 @@ steps:
       - cd client
       - tox -e py311-sensors
     depends_on:
+      - py311-scenarios
       - py310-sensors
 
   - name: Update_Docs_repo 
@@ -260,17 +332,16 @@ steps:
         path: /var/run/docker.sock
     commands:
       - git clone https://github.com/byu-holoocean/holoocean-docs.git
-      - pip3 install bs4 sphinx-build sphinx-rtd-theme sphinx-copybutton autodocsumm
+      - pip3 install bs4 sphinx-build sphinx-rtd-theme sphinx-copybutton autodocsumm scipy
       - export PATH="/home/ue4/.local/bin:$PATH"
       - python3 client/docmaker.py
-      - mkdir -p holoocean-docs/${DRONE_TAG}
-      - cp -r docs holoocean-docs/${DRONE_TAG}
-      - cd holoocean-docs
       - python3 new_version.py ${DRONE_TAG}
+      - mv docs holoocean-docs/${DRONE_TAG}
+      - cd holoocean-docs
       - python3 Sidebar_version_links.py ${DRONE_TAG}
       - git add .
-      - git commit -m "Update to version ${DRONE_TAG}"
-      - git reset --soft HEAD~2
+      # - git commit -m "Update to version ${DRONE_TAG}"
+      # - git reset --soft HEAD~2
       - git commit -m "Update to version ${DRONE_TAG}"
       - git push -f
     depends_on:
@@ -286,7 +357,7 @@ steps:
         path: /var/run/docker.sock
     commands:
       - git clone https://github.com/byu-holoocean/holoocean-docs.git
-      - pip3 install bs4 sphinx sphinx-rtd-theme sphinx-copybutton autodocsumm
+      - pip3 install bs4 sphinx==5.0.2 sphinx-rtd-theme==2.0.0 sphinx-copybutton==0.5.2 autodocsumm==0.2.12 scipy
       - export PATH="/home/ue4/.local/bin:$PATH"
       - python3 client/docmaker.py
       - rm -rf holoocean-docs/develop
@@ -294,16 +365,18 @@ steps:
       - cd holoocean-docs
       - python3 Sidebar_version_links.py develop
       - git add .
-      - git commit -m "Update to develop"
-      - git reset --soft HEAD~2
-      - git commit -m "Update to develop"
+      # - git commit -m "Update to develop"
+      # - git reset --soft HEAD~2
+      - git commit --allow-empty -m "${DRONE_COMMIT_MESSAGE//\"/\\\""}"
       - git push -f
-
     depends_on:
       - build_docker
     when:
       branch:
         - develop
+      event:
+        exclude:
+        - pull_request
 
   ## Clean up docker image off of the server
   - name: remove-docker-image

@@ -2,6 +2,7 @@
 
 
 #include "Octree.h"
+#include <iostream>
 
 // Initialize static variables
 // Used when making octree
@@ -112,6 +113,7 @@ Octree* Octree::makeEnvOctreeRoot(){
     root->makeTill = Octree::OctreeMax;
     root->load();
     
+    UE_LOG(LogHolodeck, Log, TEXT("Octree: Before line 117"));
     // set filename/makeTill for all OctreeMax nodes
     std::function<void(Octree*)> fix;
     fix = [&filePath, &fix](Octree* tree){
@@ -188,8 +190,8 @@ Octree* Octree::makeOctree(FVector center, float octreeSize, float octreeMin, FS
                 if(isnan(child->normal.Y)) child->normal.Y = sign(child->normal.Y); 
                 if(isnan(child->normal.Z)) child->normal.Z = sign(child->normal.Z); 
                 if(hit.Normal.ContainsNaN()){
-                    UE_LOG(LogHolodeck, Warning, TEXT("Found position: %s"), *child->loc.ToString());
-                    UE_LOG(LogHolodeck, Warning, TEXT("Found nan: %s"), *child->normal.ToString());
+                    UE_LOG(LogHolodeck, Warning, TEXT("Octree: Found position: %s"), *child->loc.ToString());
+                    UE_LOG(LogHolodeck, Warning, TEXT("Octree: Found nan: %s"), *child->normal.ToString());
                 }
                 // DrawDebugLine(World, center, center+hit.Normal*OctreeMin/2, FColor::Blue, true, 100, ECC_WorldStatic, 1.f);
                 // DrawDebugBox(World, center, FVector(octreeSize/2), FColor::Green, true, 2, ECC_WorldStatic, 5.0f);
@@ -220,61 +222,91 @@ void Octree::toJson(){
     // make directory
     FFileManagerGeneric().MakeDirectory(*FPaths::GetPath(file), true);
 
-    // calculate buffer size and make writer
-    int num = numLeaves()*100;
-    char* buffer = new char[num]();
-    gason::JSonBuilder doc(buffer, num-1);
+    FJsonDomBuilder::FObject doc;
 
     // fill in buffer
     toJson(doc);
 
-    if( doc.isBufferAdequate() ){
-        // String to file
-        FILE* fp = fopen(TCHAR_TO_ANSI(*file), "w+t");
-        fwrite(buffer, strlen(buffer), 1, fp);
-        fclose(fp);
-    }
-    else{
-        UE_LOG(LogHolodeck, Warning, TEXT("Octree: The buffer is too small and the output json for file %s is not valid."), *file);
-    }
+    std::ofstream fp(TCHAR_TO_UTF8(*file));
 
-    delete[] buffer;
+    fp << TCHAR_TO_ANSI(*(doc.ToString()));
+    fp.close();
 }
 
-void Octree::toJson(gason::JSonBuilder& doc){
-    doc.startObject()
-        .startArray("p")
-            .addValue(loc[0])
-            .addValue(loc[1])
-            .addValue(loc[2])
-        .endArray();
+void Octree::toJson(FJsonDomBuilder::FObject& doc){
+    
+    FJsonDomBuilder::FArray pArray;
+    pArray.Add(loc[0], loc[1], loc[2]);
 
-    if(leaves.Num() != 0){
-        doc.startArray("l");
+    doc.Set("p", pArray);
+
+    if(leaves.Num() != 0) 
+    {
+
+        FJsonDomBuilder::FArray leafArray;
+        
+
         for(Octree* l : leaves){
-            l->toJson(doc);
+            leafArray.Add(l->createLeafObject());
         }
-        doc.endArray();
-    }
-    if(size == OctreeMin){
-        doc.startArray("n")
-                .addValue(normal[0])
-                .addValue(normal[1])
-                .addValue(normal[2])
-            .endArray()
-            .addValue("m", TCHAR_TO_ANSI(*material));
+
+        doc.Set("l", leafArray);
     }
 
-    doc.endObject();
+
+    if(size == OctreeMin) 
+    {
+        FJsonDomBuilder::FArray normalArray;
+
+        normalArray.Add(normal[0], normal[1], normal[2]);
+        doc.Set("n", normalArray);
+        doc.Set("m", TCHAR_TO_ANSI(*material));
+    }
 }
+
+FJsonDomBuilder::FObject Octree::createLeafObject()
+{
+    FJsonDomBuilder::FObject leafObject;
+    FJsonDomBuilder::FArray pArray;
+    pArray.Add(loc[0], loc[1], loc[2]);
+    leafObject.Set("p", pArray);
+
+
+    if (leaves.Num() != 0)
+    {
+        FJsonDomBuilder::FArray leafArray;
+
+        for (Octree* l : leaves) {
+            leafArray.Add(l->createLeafObject());
+        }
+
+        leafObject.Set("l", leafArray);
+    }
+
+
+    if (size == OctreeMin)
+    {
+        FJsonDomBuilder::FArray normalArray;
+
+        normalArray.Add(normal[0], normal[1], normal[2]);
+        leafObject.Set("n", normalArray);
+        leafObject.Set("m", TCHAR_TO_ANSI(*material));
+    }
+
+
+    return leafObject;
+}
+
+
 
 void Octree::load(){
     // if it's not already loaded
     if(leaves.Num() == 0){
         // if it's been saved as a json, load it
         if(FPaths::FileExists(file)){
-            // UE_LOG(LogHolodeck, Log, TEXT("Loading Octree %s"), *file);
+            UE_LOG(LogHolodeck, Log, TEXT("Octree: Loading Octree %s"), *file);
             // load file to a string
+
             gason::JsonAllocator allocator;
             std::ifstream t(TCHAR_TO_ANSI(*file));
             std::string str((std::istreambuf_iterator<char>(t)),
@@ -298,14 +330,14 @@ void Octree::load(){
 
         // Otherwise build it & save for later
         else{
-            // UE_LOG(LogHolodeck, Log, TEXT("Making Octree %s"), *file);
+            UE_LOG(LogHolodeck, Log, TEXT("Octree: Making Octree %s"), *file);
             for(FVector off : corners){
                 Octree* l = makeOctree(loc+(off*size/4), size/2, makeTill);
                 if(l) leaves.Add(l);
             }
             toJson();
         }
-
+    
     }
 }
 
@@ -342,7 +374,7 @@ void Octree::unload(){
 
         // if we need to unload this one
         else if(size == Octree::OctreeMax){
-            // UE_LOG(LogHolodeck, Log, TEXT("Unloading Octree %s"), *file);
+            UE_LOG(LogHolodeck, Log, TEXT("Octree: Unloading Octree %s"), *file);
             for(Octree* leaf : leaves) delete leaf;
             leaves.Reset();
         }
@@ -354,7 +386,7 @@ void Octree::fillMaterialProperties(FString mat){
     float matProp;
     bool found = materials.Find(material, matProp);
     if(!found){
-        UE_LOG(LogHolodeck, Warning, TEXT("Missing material information for %s, adding in blank row to csv"), *this->material);
+        UE_LOG(LogHolodeck, Warning, TEXT("Octree: Missing material information for %s, adding in blank row to csv"), *this->material);
 
         // Add default line to material file to fill in later
         FString filePath = FPaths::ProjectDir() + "../../materials.csv";
@@ -372,21 +404,21 @@ void Octree::fillMaterialProperties(FString mat){
 
 FString Octree::getMaterialName(FHitResult hit){
     // Get staticmesh material
-	UMaterialInterface* mat = hit.GetComponent()->GetMaterial(hit.ElementIndex);
-	if(mat != nullptr){
-		return mat->GetFName().ToString(); 
-	}
+	// UMaterialInterface* mat = hit.GetComponent()->GetMaterial(hit.ElementIndex);
+	// if(mat != nullptr){
+	// 	return mat->GetFName().ToString(); 
+	// }
 
-	// If not staticmesh, get landscape material
-	AActor* actor = hit.GetActor();
-	ALandscapeProxy* landscape = reinterpret_cast<ALandscapeProxy*>(actor);
-	mat = landscape->LandscapeMaterial;
+	// // If not staticmesh, get landscape material
+	// AActor* actor = hit.GetActor();
+	// ALandscapeProxy* landscape = reinterpret_cast<ALandscapeProxy*>(actor);
+	// mat = landscape->LandscapeMaterial;
 
-	if(mat != nullptr){
-		return mat->GetFName().ToString();
-	}
+	// if(mat != nullptr){
+	// 	return mat->GetFName().ToString();
+	// }
 
-	// If we have extra issues getting material
-    UE_LOG(LogHolodeck, Warning, TEXT("Couldn't get material name for an octree leaf, putting as MaterialNotFound"));
+	// // If we have extra issues getting material
+    // UE_LOG(LogHolodeck, Warning, TEXT("Octree: Couldn't get material name for an octree leaf, putting as MaterialNotFound"));
 	return "MaterialNotFound";
 }

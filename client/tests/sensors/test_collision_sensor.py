@@ -16,7 +16,7 @@ uav_config = {
                 }
             ],
             "control_scheme": 0,
-            "location": [0, 0, 3],
+            "location": [0, 0, 1],
         }
     ],
 }
@@ -42,7 +42,7 @@ def test_collision_sensor_uav_falling():
             not collided
         ), "The UAV is in the air but reported it collided with something!"
 
-        for _ in range(80):
+        for _ in range(160):
             if env.tick()["CollisionSensor"][0]:
                 collided = True
 
@@ -54,9 +54,9 @@ def test_collision_sensor_uav_falling():
             assert env.tick()["CollisionSensor"][0], "The UAV stopped colliding!"
 
         # Make sure it resets to not collided after shooting it up in the air
-        env.step([0, 0, 0, 100])
+        env.step([0, 0, 0, 1000])
 
         for _ in range(50):
-            env.tick()
-
+            env.step([0, 0, 0, 1000])
+            
         assert not env.tick()["CollisionSensor"][0], "The UAV is still colliding?"

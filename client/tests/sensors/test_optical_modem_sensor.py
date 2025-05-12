@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.fixture(scope="module")
-def env():
+def env(vehicle_type="TurtleAgent"):
     scenario = {
         "name": "test",
         "world": "TestWorld",
@@ -13,7 +13,7 @@ def env():
         "agents": [
             {
                 "agent_name": "uav0",
-                "agent_type": "TurtleAgent",
+                "agent_type": vehicle_type,
                 "sensors": [{"sensor_type": "OpticalModemSensor"}],
                 "control_scheme": 1,
                 "location": [-10, 10, 0.25],
@@ -21,7 +21,7 @@ def env():
             },
             {
                 "agent_name": "uav1",
-                "agent_type": "TurtleAgent",
+                "agent_type": vehicle_type,
                 "sensors": [{"sensor_type": "OpticalModemSensor"}],
                 "control_scheme": 1,
                 "location": [-10, 7, 0.25],
@@ -42,6 +42,11 @@ def env():
         yield env
 
 
+@pytest.mark.parametrize(
+    "env",
+    ["TurtleAgent", "HoveringAUV", "TorpedoAUV", "SurfaceVessel", "BlueROV2"],
+    indirect=True,
+)
 def test_transmittable(env):
     env.reset()
 
@@ -58,6 +63,11 @@ def test_transmittable(env):
         ), "Wrong message received."
 
 
+@pytest.mark.parametrize(
+    "env",
+    ["TurtleAgent", "HoveringAUV", "TorpedoAUV", "SurfaceVessel", "BlueROV2"],
+    indirect=True,
+)
 def test_within_max_distance(env):
     "Tests to make sure that two sensors that are not within max distance do not transmit."
 
@@ -105,6 +115,11 @@ def test_within_max_distance(env):
         ), "Receiving modem received data when it should not have done so."
 
 
+@pytest.mark.parametrize(
+    "env",
+    ["TurtleAgent", "HoveringAUV", "TorpedoAUV", "SurfaceVessel", "BlueROV2"],
+    indirect=True,
+)
 def test_not_oriented(env):
     "Tests to make sure that two sensors that are not within max distance do not transmit."
 
@@ -138,6 +153,11 @@ def test_not_oriented(env):
         ), "Receiving modem received data when it should not have done so."
 
 
+@pytest.mark.parametrize(
+    "env",
+    ["TurtleAgent", "HoveringAUV", "TorpedoAUV", "SurfaceVessel", "BlueROV2"],
+    indirect=True,
+)
 def test_obstructed_view(env):
     """Tests to ensure that modem is unable to transmit when there is an obstruction between modems."""
     env._scenario["agents"] = [
@@ -179,6 +199,11 @@ def test_obstructed_view(env):
         ), "Receiving modem received data when it should not have done so."
 
 
+@pytest.mark.parametrize(
+    "env",
+    ["TurtleAgent", "HoveringAUV", "TorpedoAUV", "SurfaceVessel", "BlueROV2"],
+    indirect=True,
+)
 def test_distance_noise(env):
     """Tests to ensure that noise generation for max distance is functional"""
     num_tests = 100
@@ -229,46 +254,50 @@ def test_distance_noise(env):
     ), "All messages failed when some should have passed due to noise variation."
 
 
+@pytest.mark.parametrize(
+    "env",
+    ["TurtleAgent", "HoveringAUV", "TorpedoAUV", "SurfaceVessel", "BlueROV2"],
+    indirect=True,
+)
 def test_angle_noise(env):
     """Tests to ensure that noise generation for max distance is functional"""
-    num_tests = 50
+    num_tests = 80
     tests_passed = 0
 
     env._scenario["agents"] = [
         {
             "agent_name": "uav0",
-            "agent_type": "UavAgent",
+            "agent_type": "TurtleAgent",
             "sensors": [
                 {
                     "sensor_type": "OpticalModemSensor",
-                    "configuration": {"MaxDistance": 20, "AngleSigma": 20},
+                    "configuration": {"MaxDistance": 20, "AngleSigma": 45},
                 }
             ],
             "control_scheme": 1,
             "location": [-10, 10, 0.25],
-            "rotation": [0, 0, -90],
+            "rotation": [0, 0, 45],
         },
         {
             "agent_name": "uav1",
-            "agent_type": "UavAgent",
+            "agent_type": "TurtleAgent",
             "sensors": [
                 {
                     "sensor_type": "OpticalModemSensor",
-                    "configuration": {"MaxDistance": 20, "AngleSigma": 20},
+                    "configuration": {"MaxDistance": 20, "AngleSigma": 45},
                 }
             ],
             "control_scheme": 1,
-            "location": [-15.2, 7, 0.25],
-            "rotation": [0, 0, 90],
+            "location": [-8, 10, 0.25],
+            "rotation": [0, 0, 180],
         },
     ]
 
     env.reset()
 
-    command = [0, 0, 10, 50]
     for _ in range(num_tests):
         env.send_optical_message(0, 1, "Message")
-        state = env.step(command)
+        state = env.tick()
         if (
             "OpticalModemSensor" in state["uav1"]
             and state["uav1"]["OpticalModemSensor"] == "Message"

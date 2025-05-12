@@ -1,8 +1,8 @@
-FROM adamrehn/ue4-runtime:22.04-cudagl11-noaudio
+FROM ghcr.io/epicgames/unreal-engine:runtime
 
 USER root
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub
+# RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl git libglib2.0-dev software-properties-common
 
@@ -19,7 +19,6 @@ RUN apt-get update && apt-get install -y python3-dev python3-pip \
     python3.11-dev python3.11-distutils
 
 RUN pip3 install setuptools wheel tox posix_ipc numpy
-
 
 # Setup user
 USER ue4

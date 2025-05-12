@@ -6,7 +6,7 @@ import numpy as np
 
 
 @pytest.fixture
-def config():
+def config(vehicle_type="HoveringAUV"):
     c = {
         "name": "test_location_sensor",
         "world": "TestWorld",
@@ -15,7 +15,7 @@ def config():
         "agents": [
             {
                 "agent_name": "auv0",
-                "agent_type": "HoveringAUV",
+                "agent_type": vehicle_type,
                 "sensors": [
                     {
                         "sensor_type": "ImagingSonar",
@@ -30,6 +30,9 @@ def config():
     return c
 
 
+@pytest.mark.parametrize(
+    "config", ["HoveringAUV", "TorpedoAUV", "SurfaceVessel", "BlueROV2"], indirect=True
+)
 @pytest.mark.parametrize("size", [(0.02, 5.12), (0.1, 12.8), (0.05, 25.6)])
 def test_folder_creation(size, config):
     """Make sure folders are made with the correct size"""
@@ -51,7 +54,7 @@ def test_folder_creation(size, config):
 
     dir = os.path.join(
         holoocean.util.get_holoocean_path(),
-        "worlds/TestWorlds/LinuxNoEditor/Holodeck/Octrees",
+        "worlds/TestWorlds/Linux/Holodeck/Octrees",
     )
     dir = os.path.join(
         dir, f"{config['world']}/min{int(size[0]*100)}_max{int(size[1]*100)}"
@@ -60,6 +63,9 @@ def test_folder_creation(size, config):
     assert os.path.isdir(dir), "Sonar folder wasn't created"
 
 
+@pytest.mark.parametrize(
+    "config", ["HoveringAUV", "TorpedoAUV", "SurfaceVessel", "BlueROV2"], indirect=True
+)
 def test_blank(config):
     """Test to make sure when we're in the middle of nowhere, we get nothing back"""
 

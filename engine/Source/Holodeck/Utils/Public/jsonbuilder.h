@@ -17,6 +17,7 @@
 #define _JSONBUILDER_HPP__
 
 #include <string.h>
+#include <cstring>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace gason {
@@ -48,11 +49,16 @@ public:
     }
 
     StringBuilder&  append(const char* string, size_t length=0) {
-        if ( length == 0 )
+        if (length == 0)
+        {
             length = strlen(string);
+        }
 
-        if ( ( length + iindex ) < ilength ) {
-            strncat(ibuffer+iindex, string, length);
+        if ((length + iindex ) < ilength) 
+        {
+            //strncat(ibuffer+iindex, string, length);
+            //strncat_s(ibuffer+iindex, strlen(ibuffer), string, length);
+            std::strncat(ibuffer + iindex, string, length);
             iindex += length;
         }
         return *this;
@@ -122,12 +128,12 @@ public:
 
     /** starts an object by @code { @endcode or @code "name" : { @endcode if name is not empty. */
     JSonBuilder&    startObject(const char* name = 0) {
-        addPossibleComma();
-        if ( name != 0    &&    strlen(name) > 0 ) {
-            *this << "\"" << name << "\":";
-        }
+        //addPossibleComma();
+        // if ( name != 0    &&    strlen(name) > 0 ) {
+        //     *this << "\"" << name << "\":";
+        // }
 
-        operator <<("{");
+        // operator <<("{");
         return *this;
     }
 
