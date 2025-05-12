@@ -58,6 +58,8 @@ steps:
     when:
       event:
         - tag
+    depends_on:
+      - Package Project
 
   ## Build a temporary docker image that contains everything necessary to simplify further steps
   - name: build_docker
