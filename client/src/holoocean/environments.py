@@ -23,12 +23,26 @@ from holoocean.command import (
     RenderQualityCommand,
     CustomCommand,
     DebugDrawCommand,
+    WaterColorCommand,
+    TideCommand,
+    ChangeWeatherCommand,
+    ChangeTimeOfDayCommand,
+    SetFPSCommand,
+    SetTPSCommand,
+    TurnOnFlashlightCommand,
+    TurnOffFlashlightCommand,
+    SetRainParametersCommand,
+    AirFogCommand,
+    WaterFogCommand,
 )
 
 from holoocean.exceptions import HoloOceanException
 from holoocean.holooceanclient import HoloOceanClient
 from holoocean.agents import AgentDefinition, SensorDefinition, AgentFactory
 from holoocean.weather import WeatherController
+from holoocean.flashlight import FlashlightController
+from holoocean.tide_cycle import TideController
+from holoocean.time_cycle import TimeController
 
 from holoocean.sensors import AcousticBeaconSensor
 from holoocean.sensors import OpticalModemSensor
@@ -99,6 +113,8 @@ class HoloOceanEnvironment:
         frames_per_sec=None,
         copy_state=True,
         scenario=None,
+        set_fps=None,
+        set_tps=None,
     ):
         if agent_definitions is None:
             agent_definitions = []
@@ -196,8 +212,16 @@ class HoloOceanEnvironment:
         self._reset_ptr = self._client.malloc("RESET", [1], np.bool_)
         self._reset_ptr[0] = False
 
-        # Initialize environment controller
-        self.weather = WeatherController(self.send_world_command)
+        # Initialize weather controller
+        self.weather = WeatherController(self._client)
+
+        # Initialize tide controller
+        self.tide_cycle = TideController(self._client)
+        self.tide_cycle.get_ticks(lambda: self._num_ticks)
+
+        #Initialize time of day controller
+        self.time_cycle = TimeController(self._client)
+        self.time_cycle.get_ticks(lambda: self._num_ticks)
 
         # Set up agents already in the world
         self.agents = dict()
@@ -224,6 +248,10 @@ class HoloOceanEnvironment:
         # Flag indicates if the user has called .reset() before .tick() and .step()
         self._initial_reset = False
         self.reset()
+        if set_fps is not None:
+            self.set_fps(self._frames_per_sec)
+        if set_tps is not None:
+            self.set_ticks_per_sec(self._ticks_per_sec)
 
     @property
     def _timeout(self):
@@ -271,11 +299,11 @@ class HoloOceanEnvironment:
                 result.append(sensor.name)
                 result.append("\n")
         return "".join(result)
-
+    
     def _load_scenario(self):
         """Loads the scenario defined in self._scenario_key.
 
-        Instantiates agents, sensors, and weather.
+        Instantiates agents, sensors, weather, tides, and time of day.
 
         If no scenario is defined, does nothing.
         """
@@ -399,15 +427,50 @@ class HoloOceanEnvironment:
 
         if "weather" in self._scenario:
             weather = self._scenario["weather"]
-            if "hour" in weather:
-                self.weather.set_day_time(weather["hour"])
             if "type" in weather:
                 self.weather.set_weather(weather["type"])
-            if "fog_density" in weather:
-                self.weather.set_fog_density(weather["fog_density"])
-            if "day_cycle_length" in weather:
-                day_cycle_length = weather["day_cycle_length"]
-                self.weather.start_day_cycle(day_cycle_length)
+
+        if "tide_cycle" in self._scenario:
+            tide_cycle = self._scenario["tide_cycle"]
+            if "active" in tide_cycle:
+                self.tide_cycle.set_active(tide_cycle["active"])
+            if "amplitude" in tide_cycle:
+                self.tide_cycle.set_amplitude(tide_cycle["amplitude"])
+            if "frequency" in tide_cycle:
+                self.tide_cycle.set_frequency(tide_cycle["frequency"])
+
+        if "time_cycle" in self._scenario:
+            time_cycle = self._scenario["time_cycle"]
+            if "active" in time_cycle:
+                self.time_cycle.set_active(time_cycle["active"])
+            if "frequency" in time_cycle:
+                self.time_cycle.set_frequency(time_cycle["frequency"])
+            if "hour" in time_cycle:
+                self.time_cycle.set_hour(time_cycle["hour"])
+
+        if "flashlight" in self._scenario:
+            for flashlight_data in self._scenario["flashlight"]:
+                # Get flashlight name
+                flashlight_name = flashlight_data.get("flashlight_name", "flashlight1")
+
+                # Create a new controller instance for each flashlight
+                flashlight_controller = FlashlightController(
+                    self._client,
+                    flashlight_name=flashlight_name,
+                    intensity=flashlight_data.get("intensity", 5000),
+                    beam_width=flashlight_data.get("beam_width", 45.0),
+                    location_x_offset=flashlight_data.get("location_x_offset", 0),
+                    location_y_offset=flashlight_data.get("location_y_offset", 0),
+                    location_z_offset=flashlight_data.get("location_z_offset", 0),
+                    angle_pitch=flashlight_data.get("angle_pitch", -30),
+                    angle_yaw=flashlight_data.get("angle_yaw", 0),
+                    color_R=flashlight_data.get("color_R", 1),
+                    color_G=flashlight_data.get("color_G", 1),
+                    color_B=flashlight_data.get("color_B", 1),
+                )
+
+                flashlight_controller.set_flashlight()
+
 
     def reset(self):
         """Resets the environment, and returns the state.
@@ -498,6 +561,9 @@ class HoloOceanEnvironment:
 
             last_state = self._default_state_fn()
 
+            self.tide_cycle.update_tide()
+            self.time_cycle.update_time()
+
             self._tick_sensor()
             self._num_ticks += 1
 
@@ -557,6 +623,8 @@ class HoloOceanEnvironment:
 
             # Clock will not advance if the tick_clock is false (pre_start_steps in reset() so clock starts at 0)
             if tick_clock:
+                self.tide_cycle.update_tide()
+                self.time_cycle.update_time()
                 self._tick_sensor()
                 self._num_ticks += 1
             if publish and self._lcm is not None:
@@ -785,13 +853,154 @@ class HoloOceanEnvironment:
         """
         self._enqueue_command(RenderViewportCommand(render_viewport))
 
-    def set_render_quality(self, render_quality):
+    def set_render_quality(self, render_quality, should_keep_fps=False):
         """Adjusts the rendering quality of HoloOcean.
 
         Args:
-            render_quality (:obj:`int`): An integer between 0 = Low Quality and 3 = Epic quality.
+            render_quality (:obj:`int`, :obj:`boolean`): An integer between 0 = Low Quality and 3 = Epic quality.
+            The boolean is a second, optional parameter that determines whether or not to maintain the FPS limit at the previously defined rate. 
+            If false the FPS max rate will be removed. Default behavior is to remove the FPS cap. If true, the previous FPS limit will be maintained.
         """
         self._enqueue_command(RenderQualityCommand(render_quality))
+        if should_keep_fps:
+            self.set_fps(self._frames_per_sec)
+
+    def set_fps(self, fps: int):
+        """Sets the frames per second of the environment.
+
+        Args:
+            fps (:obj:`int`): The desired frames per second. If set to 0, will max what it can do.
+        """
+        if fps is True:
+            fps = self._ticks_per_sec
+        elif fps is False:
+            fps = 0
+
+        self._enqueue_command(SetFPSCommand(fps))
+
+    def set_ticks_per_sec(self, ticks_per_sec):
+        """Sets the ticks per second of the environment.
+
+        Args:
+            ticks_per_sec (:obj:`int`): The desired ticks per second.
+        """
+        if ticks_per_sec <= 0:
+            raise HoloOceanException("Ticks per second must be greater than 0")
+        self._ticks_per_sec = ticks_per_sec
+        self._enqueue_command(SetTPSCommand(ticks_per_sec))
+
+    def turn_on_flashlight(self, flashlight_name, intensity=5000, beam_width=45, location_x_offset=0, location_y_offset=0, location_z_offset=0, angle_pitch=-30, angle_yaw=0, color_R=1, color_G=1, color_B=1):
+        """Turns on the vehicle's flashlight and sets its visual parameters.
+
+        Args:
+            flashlight_name(:obj:`str`): The name of the flashlight to turn on. (e.g., flashlight1)
+            intensity (:obj:`float`): The brightness of the flashlight. Recommended range: 0 to 100000. (Default = 5000)
+            beam_width (:obj:`float`): The beam's spread angle in degrees. Recommended range: 1 to 80. (Default = 45)
+            location_x_offset (:obj:`float`): x component of the flashlight location offset. (Default = 0)
+            location_y_offset (:obj:`float`): y component of the flashlight location offset. (Default = 0)
+            location_z_offset (:obj:`float`): z component of the flashlight location offset. (Default = 0)
+            angle_pitch (:obj:`float`): The pitch angle (in degrees) for flashlight direction. Range: -70 to 70. (Default = -30)
+            angle_yaw (:obj:`float`): The yaw angle (in degrees) for flashlight direction. Range: -70 to 70. (Default = 0)
+            color_R (:obj:`float`): Red component of the flashlight color. Range: 0.0 to 1.0. (Default = 1)
+            color_G (:obj:`float`): Green component of the flashlight color. Range: 0.0 to 1.0. (Default = 1)
+            color_B (:obj:`float`): Blue component of the flashlight color. Range: 0.0 to 1.0. (Default = 1)
+        """
+
+        if "flashlight" in self._scenario:
+            for flashlight_data in self._scenario["flashlight"]:
+                # Check if flashlight is defined in the config and use those values as default
+                if (flashlight_name == flashlight_data.get("flashlight_name")):
+                    intensity=flashlight_data.get("intensity", intensity)
+                    beam_width=flashlight_data.get("beam_width", beam_width)
+                    location_x_offset=flashlight_data.get("location_x_offset", location_x_offset)
+                    location_y_offset=flashlight_data.get("location_y_offset", location_y_offset)
+                    location_z_offset=flashlight_data.get("location_z_offset", location_z_offset)
+                    angle_pitch=flashlight_data.get("angle_pitch", angle_pitch)
+                    angle_yaw=flashlight_data.get("angle_yaw", angle_yaw)
+                    color_R=flashlight_data.get("color_R", color_R)
+                    color_G=flashlight_data.get("color_G", color_G)
+                    color_B=flashlight_data.get("color_B", color_B)
+                    break
+
+        self._enqueue_command(TurnOnFlashlightCommand(flashlight_name, intensity, beam_width, location_x_offset, location_y_offset, location_z_offset, angle_pitch, angle_yaw, color_R, color_G, color_B))
+        
+    def turn_off_flashlight(self, flashlight_name):
+        """Turns off the vehicle's flashlight.
+
+        Args:
+            flashlight_name(:obj:`str`): The name of the flashlight to turn off. Vehicles have 4 flashlights (flashlight1-flashlight4)
+
+        """
+        self._enqueue_command(TurnOffFlashlightCommand(flashlight_name))
+
+    def water_color(self, red, green, blue):
+        """Changes the color of the water.
+
+
+        Args:
+            red (:obj:`float`): A number between 0 and 1 to set the intensity of the red value.
+            green(:obj:`float`): A number between 0 and 1 to set the intensity of the green value.
+            blue (:obj:`float`): A number between 0 and 1 to set the intensity of the blue value.
+        """
+        self._enqueue_command(WaterColorCommand(red, green, blue))
+
+    def tide(self, adjustment, bool):
+        """Changes the water level.
+
+        Args:
+            adjustment (:obj:`float`): Any positive/negative number that you want to adjust/set the water level to.
+            bool (:obj:`float`): 0 if you want to adjust water level, and 1 if you want to set a new water level.
+        """
+        self._enqueue_command(TideCommand(adjustment, bool))
+
+    def change_weather(self, weather):
+        """Changes the weather in the world.
+
+        Args:
+            weather (:obj:`int`): The weather wanted (0 - sunny, 1 - cloudy, 2 - rainy).      
+        """
+        self._enqueue_command(ChangeWeatherCommand(weather))
+
+    def change_time_of_day(self, TimeOfDay):
+        """Changes the world's time of day. 
+
+        Args:
+            TimeOfDay (:obj:`float`): Time of day desired, a number between 0 and 23 inclusive.
+        """
+        self._enqueue_command(ChangeTimeOfDayCommand(TimeOfDay))
+
+    def set_rain_parameters(self, vel_x, vel_y, vel_z, spawnRate):
+        """Changes the rain's velocity and spawn rate. 
+
+        Args:
+            vel_x (:obj:`float`): Rain velocity on the x axis.
+            vel_y (:obj:`float`): VRain velocity on the y axis.
+            vel_z (:obj:`float`): Rain velocity on the z axis. Should be a negative value.
+            spawnRate(:obj:`float`): Rain's spawn rate (number of particles).
+        """
+        self._enqueue_command(SetRainParametersCommand(vel_x,vel_y,vel_z,spawnRate))
+
+    def air_fog(self, fogDensity, fogDepth=3.0, color_R=0.45, color_G=0.5, color_B=0.6):
+        """Changes the air fog density, depth, and color.
+        Args:
+            fogDensity (:obj:`float`): The density value for the fog. Range: 0.0 to 10.0.
+            fogDepth (:obj:`float`): The distance at which the fog begins. Range: 0.0 to 10.0. (Default = 3)
+            color_R (:obj:`float`): The red component of the fog's color. Range: 0.0 to 1.0. (Default = 0.45)
+            color_G (:obj:`float`): The green component of the fog's color. Range: 0.0 to 1.0. (Default = 0.5)
+            color_B (:obj:`float`): The blue component of the fog's color. Range: 0.0 to 1.0. (Default = 0.6)
+        """
+        self._enqueue_command(AirFogCommand(fogDensity, fogDepth, color_R, color_G, color_B))
+
+    def water_fog(self, fogDensity, fogDepth=3.0, color_R=0.4, color_G=0.6, color_B=1.0):
+        """Changes the water fog density, depth, and color.
+        Args:
+            fogDensity (:obj:`float`): The density value for the fog. Range: 0.0 to 10.0.
+            fogDepth (:obj:`float`): The distance at which the fog begins. Range: 0.0 to 10.0. (Default = 3)
+            color_R (:obj:`float`): The red component of the fog's color. Range: 0.0 to 1.0. (Default = 0.4)
+            color_G (:obj:`float`): The green component of the fog's color. Range: 0.0 to 1.0. (Default = 0.6)
+            color_B (:obj:`float`): The blue component of the fog's color. Range: 0.0 to 1.0. (Default = 1.0)tt
+        """
+        self._enqueue_command(WaterFogCommand(fogDensity, fogDepth, color_R, color_G, color_B))
 
     def set_control_scheme(self, agent_name, control_scheme):
         """Set the control scheme for a specific agent.

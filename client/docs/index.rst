@@ -1,6 +1,11 @@
+.. image:: images/holoocean-logo.png
+
+
+.. figure:: images/inspect_plane.jpg
+
+
 Welcome to HoloOcean's documentation!
 ==============================================
-.. image:: images/inspect_plane.jpg
 
 HoloOcean is a high-fidelity simulator develped by the `Field Robotic Systems Lab (FRoStLab) <https://frostlab.byu.edu>`_
 at `Brigham Young University <https://www.byu.edu>`_.
@@ -57,6 +62,7 @@ Simulation of Sonar (Imaging, Profiling, Sidescan) sensors:
    packages/packages
    agents/agents
    sensors/sensors
+   env_appearance/env_appearance
    examples/examples
    sensors/sensors
    examples/examples
@@ -80,8 +86,6 @@ Simulation of Sonar (Imaging, Profiling, Sidescan) sensors:
    holoocean/shmem
    holoocean/util
    holoocean/exceptions
-   holoocean/weather
-
 
 Indices and tables
 ==================

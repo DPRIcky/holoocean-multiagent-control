@@ -399,14 +399,191 @@ class RenderQualityCommand(Command):
     """Adjust the rendering quality of HoloOcean
 
     Args:
-        render_quality (int): 0 = low, 1 = medium, 3 = high, 3 = epic
+        render_quality (:obj:`int`): 0 = low, 1 = medium, 3 = high, 3 = epic
 
     """
     def __init__(self, render_quality):
         Command.__init__(self)
         self.set_command_type("AdjustRenderQuality")
         self.add_number_parameters(int(render_quality))
+        
+class WaterColorCommand(Command):
+    """Changes the water color in the current world.
 
+    Args:
+        red (:obj:`float`): The red intensity value of the new water, between 0 and 1.
+        green (:obj:`float`): The green intensity value of the new water, between 0 and 1.
+        blue (:obj:`float`): The blue intensity value of the new water, between 0 and 1.
+    """
+    def __init__(self, red, green, blue):
+        Command.__init__(self)
+        self.set_command_type("WaterColor")
+        self.add_number_parameters(float(red))
+        self.add_number_parameters(float(green))
+        self.add_number_parameters(float(blue))
+
+class TideCommand(Command):
+    """Changes the water level in the current world.
+
+    Args:
+        adjustment (:obj:`float`): The amount in meters you want to adjust the water level by or the level you want to set the water at.
+        absolute (:obj:`bool`): True if you want to set a new surface level and False if you want to adjust the tides by an offset.
+    """
+    def __init__(self, adjustment, absolute):
+        Command.__init__(self)
+        self.set_command_type("Tide")
+        self.add_number_parameters(float(adjustment))
+        self.add_number_parameters(int(bool(absolute)))
+
+class ChangeWeatherCommand(Command):
+    """Changes the weather in the world.
+
+    Args:
+        weather (:obj:`int`): The weather wanted (0 - sunny, 1 - cloudy, 2 - rainy).      
+    """
+    def __init__(self, weather):
+        Command.__init__(self)
+        self.set_command_type("ChangeWeather")
+        self.add_number_parameters(int(weather))
+
+class SetRainParametersCommand(Command):
+    """Changes the rain's velocity and spawn rate. 
+    You must first activate weather and set it to ``2 - rainy`` using the Change Weather Command 
+    before this will have any visible effect.
+
+    Args:
+        vel_x (:obj:`float`): Rain velocity on the x axis.
+        vel_y (:obj:`float`): VRain velocity on the y axis.
+        vel_z (:obj:`float`): Rain velocity on the z axis. Should be a negative value.
+        spawnRate(:obj:`float`): Rain's spawn rate (number of particles).
+    """
+    def __init__(self, vel_x, vel_y, vel_z, spawnRate):
+        Command.__init__(self)
+        self.set_command_type("SetRainParameters")
+        self.add_number_parameters(float(vel_x))
+        self.add_number_parameters(float(vel_y))
+        self.add_number_parameters(float(vel_z))
+        self.add_number_parameters(float(spawnRate))
+
+class ChangeTimeOfDayCommand(Command):
+    """Changes the world's time of day. 
+
+    Args:
+        TimeOfDay (:obj:`float`): time of day desired, a number between 0 and 23 inclusive.
+    """
+    def __init__(self, TimeOfDay):
+        Command.__init__(self)
+        self.set_command_type("ChangeTimeOfDay")
+        self.add_number_parameters(TimeOfDay)
+
+
+class SetFPSCommand(Command):
+    """Set the frames per second of the simulation.
+
+    Args:
+        fps (:obj:`int`): The number of frames per second to set the simulation to.
+
+    """
+    def __init__(self, fps):
+        Command.__init__(self)
+        self.set_command_type("AdjustFPS")
+        self.add_number_parameters(int(fps))
+    
+class SetTPSCommand(Command):
+    """Set the ticks per second of the simulation.
+
+    Args:
+        tps (:obj:`int`): The number of ticks per second to set the simulation to.
+
+    """
+    def __init__(self, tps):
+        Command.__init__(self)
+        self.set_command_type("AdjustTPS")
+        self.add_number_parameters(int(tps))
+        
+
+class TurnOnFlashlightCommand(Command):
+    """Turns on the vehicle's flashlight and sets its visual parameters.
+
+    Args:
+        flashlight_name(:obj:`str`): The name of the flashlight to turn on. (e.g., flashlight1)
+        intensity (:obj:`float`): The brightness of the flashlight. Recommended range: 0 to 100000. (Default = 5000)
+        beam_width (:obj:`float`): The beam's spread angle in degrees. Recommended range: 1 to 80. (Default = 45)
+        location_x_offset (:obj:`float`): x component of the flashlight location offset. (Default = 0)
+        location_y_offset (:obj:`float`): y component of the flashlight location offset. (Default = 0)
+        location_z_offset (:obj:`float`): z component of the flashlight location offset. (Default = 0)
+        angle_pitch (:obj:`float`): The pitch angle (in degrees) for flashlight direction. Range: -70 to 70. (Default = -30)
+        angle_yaw (:obj:`float`): The yaw angle (in degrees) for flashlight direction. Range: -70 to 70. (Default = 0)
+        color_R (:obj:`float`): Red component of the flashlight color. Range: 0.0 to 1.0. (Default = 1)
+        color_G (:obj:`float`): Green component of the flashlight color. Range: 0.0 to 1.0. (Default = 1)
+        color_B (:obj:`float`): Blue component of the flashlight color. Range: 0.0 to 1.0. (Default = 1)
+    """
+
+    def __init__(self, flashlight_name, intensity=5000, beam_width=45, location_x_offset=0, location_y_offset=0, location_z_offset=0, angle_pitch=-30, angle_yaw=0, color_R=1, color_G=1, color_B=1):
+        Command.__init__(self)
+        self.set_command_type("TurnOnFlashlight")
+        self.add_string_parameters(flashlight_name)
+        self.add_number_parameters(float(intensity))
+        self.add_number_parameters(float(beam_width))
+        self.add_number_parameters(float(location_x_offset))
+        self.add_number_parameters(float(location_y_offset))
+        self.add_number_parameters(float(location_z_offset))
+        self.add_number_parameters(float(angle_pitch))
+        self.add_number_parameters(float(angle_yaw))
+        self.add_number_parameters(float(color_R))
+        self.add_number_parameters(float(color_G))
+        self.add_number_parameters(float(color_B))
+
+class TurnOffFlashlightCommand(Command):
+    """Turns off the vehicle's flashlight.
+
+    Args:
+        flashlight_name(:obj:`str`): The name of the flashlight to turn off. Vehicles have 4 flashlights (flashlight1-flashlight4)
+    """
+
+    def __init__(self, flashlight_name):
+        Command.__init__(self)
+        self.set_command_type("TurnOffFlashlight")
+        self.add_string_parameters(flashlight_name)
+        
+
+class AirFogCommand(Command):
+    """Changes the air fog density, depth, and color.
+
+    Args:
+        fogDensity (:obj:`float`): The density value for the fog. Range: 0.0 to 10.0.
+        fogDepth (:obj:`float`): The distance at which the fog begins. Range: 0.0 to 10.0. (Default = 3).
+        color_R (:obj:`float`): The red component of the fog's color. Range: 0.0 to 1.0. (Default = 0.45).
+        color_G (:obj:`float`): The green component of the fog's color. Range: 0.0 to 1.0. (Default = 0.5).
+        color_B (:obj:`float`): The blue component of the fog's color. Range: 0.0 to 1.0. (Default = 0.6).
+    """
+    def __init__(self, fogDensity, fogDepth=3.0, color_R=0.45, color_G=0.5, color_B=0.6):
+        Command.__init__(self)
+        self.set_command_type("AirFog")
+        self.add_number_parameters(float(fogDensity))
+        self.add_number_parameters(float(fogDepth))
+        self.add_number_parameters(float(color_R))
+        self.add_number_parameters(float(color_G))
+        self.add_number_parameters(float(color_B))
+
+class WaterFogCommand(Command):
+    """Changes the water fog density, depth, and color.
+
+    Args:
+        fogDensity (:obj:`float`): The density value for the fog. Range: 0.0 to 10.0.
+        fogDepth (:obj:`float`): The distance at which the fog begins. Range: 0.0 to 10.0. (Default = 3).
+        color_R (:obj:`float`): The red component of the fog's color. Range: 0.0 to 1.0. (Default = 0.4).
+        color_G (:obj:`float`): The green component of the fog's color. Range: 0.0 to 1.0. (Default = 0.6).
+        color_B (:obj:`float`): The blue component of the fog's color. Range: 0.0 to 1.0. (Default = 1.0).
+    """
+    def __init__(self, fogDensity, fogDepth=3.0, color_R=0.4, color_G=0.6, color_B=1.0):
+        Command.__init__(self)
+        self.set_command_type("WaterFog")
+        self.add_number_parameters(float(fogDensity))
+        self.add_number_parameters(float(fogDepth))
+        self.add_number_parameters(float(color_R))
+        self.add_number_parameters(float(color_G))
+        self.add_number_parameters(float(color_B))
 
 class CustomCommand(Command):
     """Send a custom command to the currently loaded world.

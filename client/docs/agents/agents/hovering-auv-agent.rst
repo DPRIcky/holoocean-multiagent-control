@@ -23,9 +23,9 @@ Control Schemes
   the front right vertical thrusters, then goes around counter-clockwise, then repeat the last four 
   with the sideways thrusters.
 
-**PD Controller (``1``)**
+**PID Controller (``1``)**
    A 6-length floating point vector of desired position in the global frame and roll, pitch, and yaw. 
-   A basic PD controller has been implementing to move the vehicle to that position and orientation 
+   A basic PID controller has been implementing to move the vehicle to that position and orientation 
    using the needed forces and torques.
 
 **Custom Dynamics (``2``)**
@@ -65,3 +65,21 @@ Socket Frames
 
 .. image:: images/hovering-front.png
    :scale: 50%
+
+
+.. _hoveringauv-flashlights:
+
+Flashlights
+===========
+
+The HoveringAUV comes with four built-in flashlights positioned around the vehicle to provide illumination in various directions.
+
+.. image:: images/hovering_auv_flashlight.png
+   :scale: 60%
+
+* `flashlight1`: (31, -25, 14)
+* `flashlight2`: (31, 25, 14)
+* `flashlight3`: (31, -25, -15)
+* `flashlight4`: (31, 25, -15)
+
+Please refer to :ref:`flashlights<flashlight>` for information on available control commands.

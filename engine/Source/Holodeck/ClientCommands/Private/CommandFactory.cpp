@@ -9,6 +9,8 @@ UCommand* UCommandFactory::MakeCommand(const std::string& Name, const std::vecto
 										  { "TeleportCamera", &CreateInstance<UTeleportCameraCommand> },
 										  { "RGBCameraRate", &CreateInstance<URGBCameraRateCommand> },
 										  { "AdjustRenderQuality", &CreateInstance<UAdjustRenderQualityCommand> },
+										  { "AdjustFPS", &CreateInstance<UAdjustFPSCommand> },
+										  { "AdjustTPS", &CreateInstance<UAdjustTPSCommand> },
 										  { "DebugDraw", &CreateInstance<UDebugDrawCommand> },
 										  { "RenderViewport", &CreateInstance<URenderViewportCommand> },
 										  { "AddSensor", &CreateInstance<UAddSensorCommand> },
@@ -16,7 +18,17 @@ UCommand* UCommandFactory::MakeCommand(const std::string& Name, const std::vecto
 										  { "RotateSensor", &CreateInstance<URotateSensorCommand> },
 										  { "CustomCommand", &CreateInstance<UCustomCommand> },
 										  { "SendAcousticMessage", &CreateInstance<USendAcousticMessageCommand> },
-										  { "SendOpticalMessage", &CreateInstance<USendOpticalMessageCommand> }, };
+										  { "SendOpticalMessage", &CreateInstance<USendOpticalMessageCommand> },
+										  { "TurnOnFlashlight", &CreateInstance<UTurnOnFlashlightCommand>},
+										  { "TurnOffFlashlight", &CreateInstance<UTurnOffFlashlightCommand>}, 
+										  { "SendOpticalMessage", &CreateInstance<USendOpticalMessageCommand> },
+										  { "Tide", &CreateInstance<UTideCommand>},
+										  { "ChangeTimeOfDay", &CreateInstance<UChangeTimeOfDayCommand>},
+										  { "ChangeWeather", &CreateInstance<UChangeWeatherCommand>},
+										  { "WaterColor", &CreateInstance<UWaterColorCommand>},
+										  { "SetRainParameters", &CreateInstance<USetRainParametersCommand>},
+										  { "AirFog",  &CreateInstance<UAirFogCommand>},
+										  { "WaterFog",  &CreateInstance<UWaterFogCommand>}, };
 
 	UCommand*(*CreateCommandFunction)()  = CommandMap[Name];
 	UCommand* ToReturn = nullptr;

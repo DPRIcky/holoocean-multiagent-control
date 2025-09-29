@@ -1,10 +1,11 @@
-# HoloOcean
+
+<img width="30960" height="6770" alt="holoocean-02" src="https://github.com/user-attachments/assets/4a7e1e62-7553-4ec4-959b-27fde516c28c" />
 
 ![HoloOcean Image](client/docs/images/inspect_plane.jpg)
 
 [![pages-build-deployment](https://github.com/byu-holoocean/holoocean-docs/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/byu-holoocean/holoocean-docs/actions/workflows/pages/pages-build-deployment)
  [![Build Status](https://robots.et.byu.edu:4144/api/badges/byu-holoocean/HoloOcean/status.svg?ref=refs/heads/develop)](https://robots.et.byu.edu:4144/byu-holoocean/HoloOcean)
-
+[![Docker Image CI](https://github.com/byu-holoocean/HoloOcean/actions/workflows/docker-image.yml/badge.svg)](https://github.com/byu-holoocean/HoloOcean/actions/workflows/docker-image.yml)
 
 HoloOcean is a high-fidelity simulator develped by the [Field Robotic Systems Lab (FRostLab)](https://frostlab.byu.edu) at [Brigham Young University](https://byu.edu).
 
