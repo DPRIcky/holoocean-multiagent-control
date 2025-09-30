@@ -304,7 +304,10 @@ def install(package_name, url=None, branch=None, commit=None):
                     package_name=package_name,
                     platform=commit)
         if branch == "":
-            url = url.replace("//", "/")
+            url = "{backend_url}{package_name}/{platform}.zip".format(
+                    backend_url=BACKEND_URL,
+                    package_name=package_name,
+                    platform=commit)
 
     install_path = os.path.join(holodeck_path, "worlds", package_name)
 
