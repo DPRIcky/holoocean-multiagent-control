@@ -12,6 +12,21 @@ Changelog
     merged it at the end in parentheses
   - see https://github.com/BYU-PCCL/holodeck/wiki/Holodeck-Release-Notes-Template
 
+HoloOcean 2.2.0
+===============
+*10/22/2025*
+
+New Features
+------------
+
+- Added underwater currents
+- Added biomass, salinity, and temperature (BST) sensor
+
+Bug Fixes
+---------
+
+- Fixed RangeFinder sensor returning max range value when nothing was in range of the sensor. Now it returns -1 if nothing is in range of the sensor.
+
 HoloOcean 2.1.0
 ===============
 *9/29/2025*
