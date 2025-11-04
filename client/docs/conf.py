@@ -25,9 +25,9 @@ copyright = 'BYU FRoStLab'
 author = 'Easton Potokar, Spencer Ashford, Joshua Mangelson'
 
 # The short X.Y version
-version = "2.2.0"
+version = "2.2.1"
 # The full version, including alpha/beta/rc tags
-release = "2.2.0"
+release = "2.2.1"
 
 
 # -- General configuration ---------------------------------------------------
@@ -208,7 +208,7 @@ epub_exclude_files = ['search.html']
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
-# Force docstrings to be formatted the same as regular .rst pages
-napoleon_use_rtype = False
-napoleon_google_docstring = False
-napoleon_numpy_docstring = False
+# # Force docstrings to be formatted the same as regular .rst pages
+# napoleon_use_rtype = False
+# napoleon_google_docstring = False
+# napoleon_numpy_docstring = False

@@ -11,7 +11,7 @@ HoloOcean is a high-fidelity simulator develped by the [Field Robotic Systems La
 
 Built upon Unreal Engine (by Epic Games) and Holodeck (developed by the BYU PCCL Lab), HoloOcean enables easy simulation of marine robotics and autonomy with a wide variety of sensors, agents, and features.
 
-## New Features
+## HoloOcean 2.2.1 New Features
  - Underwater currents 
  - Biomass, salinity, and temperature (BST) sensor
  - Tide control
@@ -52,7 +52,7 @@ See [Installation](https://byu-holoocean.github.io/holoocean-docs/develop/usage/
 * [Examples](https://byu-holoocean.github.io/holoocean-docs/develop/usage/getting-started.html#code-examples)
 * [Agents](https://byu-holoocean.github.io/holoocean-docs/develop/agents/agents.html)
 * [Sensors](https://byu-holoocean.github.io/holoocean-docs/develop/holoocean/sensors.html)
-* [Available Packages and Worlds](https://byu-holoocean.github.io/holoocean-docs//developpackages/packages.html)
+* [Available Packages and Worlds](https://byu-holoocean.github.io/holoocean-docs/develop/packages/packages.html)
 
 ## Usage Overview
 HoloOcean's interface is similar to OpenAI's gym.

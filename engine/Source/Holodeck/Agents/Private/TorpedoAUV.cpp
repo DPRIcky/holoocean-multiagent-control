@@ -72,7 +72,7 @@ void ATorpedoAUV::ApplyFin(int i, float command){
 	// get velocity at fin location, in fin frame
 	FVector finWorld = RootMesh->GetCenterOfMass() + bodyToWorld.RotateVector(finTranslation[i] - CenterMass);
 	FVector velWorld = RootMesh->GetPhysicsLinearVelocityAtPoint(finWorld); // METERS/sec (unreal is dumb, distance is in cm/s but velocity is in m/s)
-	FVector velOceanCurrent = TorpedoAUV->GetOceanCurrentVelocity();
+	FVector velOceanCurrent = this->GetOceanCurrentVelocity();
 	FVector relativeVel = velWorld - velOceanCurrent;
 	FVector velBody = bodyToWorld.UnrotateVector(relativeVel);
 	FVector velFin = finToBody.UnrotateVector(velBody);

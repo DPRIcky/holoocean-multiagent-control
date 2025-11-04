@@ -1,8 +1,18 @@
 """HoloOcean is an underwater robotics simulator.
 """
-__version__ = '2.2.0'
+__version__ = '2.2.1'
 
-from holoocean.holoocean import make
+from holoocean.holoocean import make, delete_all_octrees, delete_world_octrees
 from holoocean.packagemanager import *
 
-__all__ = ['agents', 'environments', 'exceptions', 'holoocean', 'lcm', 'make', 'packagemanager', 'sensors', 'fossen_dynamics']
+__all__ = [
+    "agents",
+    "environments",
+    "exceptions",
+    "holoocean",
+    "lcm",
+    "make",
+    "packagemanager",
+    "sensors",
+    "fossen_dynamics",
+]
