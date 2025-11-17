@@ -17,6 +17,9 @@ config = {
     "ticks_per_sec": 60,
     "window_width": 1280,
     "window_height": 720,
+    "current": {
+        "vehicle_debugging": True
+    },
     "agents": [
         {
             "agent_name": "auv0",
@@ -139,6 +142,39 @@ CONNECTIVITY_RANGE = 5.0  # Maximum distance between agents to maintain connecti
 GOAL_THRESHOLD = 2.0    # Distance threshold to consider goal reached (increased)
 MAX_THRUST = 35.0       # Maximum thrust value (increased)
 FORMATION_SPACING = 4.0 # Desired spacing in relay formation
+
+def vortex_field(location):
+    """Define vortex current field - simulates swirling water current
+    
+    Args:
+        location: Current position [x, y, z]
+    
+    Returns:
+        Current velocity [dx, dy, dz] at that location
+    """
+    x, y, z = location
+    
+    # No current above water
+    if z > 0:
+        return [0, 0, 0]
+    
+    # Vortex parameters
+    strength = 0.3  # Much reduced strength to prevent throwing robots
+    center_x, center_y = 10, 0  # Center vortex around middle of path
+    
+    # Distance from vortex center
+    dx_center = x - center_x
+    dy_center = y - center_y
+    r_squared = dx_center**2 + dy_center**2 + 1e-5  # avoid divide by zero
+    
+    # Tangential flow (swirling)
+    dx = -dy_center / r_squared * strength
+    dy = dx_center / r_squared * strength
+    
+    # Vertical component (up/down oscillation) - very small
+    dz = 0.01 * np.cos(0.05 * r_squared)
+    
+    return [dx, dy, dz]
 
 def generate_random_goal():
     """Generate a random goal position that avoids obstacles"""
@@ -368,9 +404,8 @@ def update_trajectories(states):
             position = states[agent_name]["LocationSensor"]
             current_positions[i] = position
             trajectory_history[i].append(list(position))
-            # Keep only last 300 points to avoid memory issues
-            if len(trajectory_history[i]) > 300:
-                trajectory_history[i].pop(0)
+            # Keep all points - no limit for persistent trajectories
+            # If memory becomes an issue, increase limit to much higher value
 
 def setup_realtime_visualization():
     """Setup real-time 3D visualization in a separate window"""
@@ -818,6 +853,10 @@ with holoocean.make(scenario_cfg=config) as env:
     
     print("✓ Goal marker drawn in the environment!")
     
+    # Draw ocean current vector field visualization (after a delay)
+    map_dimensions = [60, 40, 20]  # [x, y, z] dimensions for vector field
+    print("🌊 Ocean currents enabled! Vortex field will be visualized after 2 seconds...")
+    
     # Start real-time 3D visualization in a separate thread
     print("\n🎨 Starting real-time 3D trajectory visualization...")
     print("   A matplotlib window will open showing live agent movements.")
@@ -826,25 +865,41 @@ with holoocean.make(scenario_cfg=config) as env:
     time.sleep(2)  # Give the visualization window time to open
     
     print("\n" + "="*80)
-    print("STARTING AUTONOMOUS RELAY FORMATION CONTROL")
+    print("STARTING AUTONOMOUS RELAY FORMATION CONTROL WITH OCEAN CURRENTS")
     print("="*80)
     print("\n💡 TIP: You can freely rotate the camera view with your mouse!")
     print("   The camera will not auto-follow the agents.")
     print("   Real-time 3D plot shows agent trajectories in a separate window!")
     print(f"\n🎯 Goal: [{shared_goal[0]:.2f}, {shared_goal[1]:.2f}, {shared_goal[2]:.2f}]")
     print(f"⚠️  Avoid {len(obstacles)} obstacles along the way!")
-    print(f"📡 Maintain connectivity: agents must stay within {CONNECTIVITY_RANGE}m of each other\n")
+    print(f"📡 Maintain connectivity: agents must stay within {CONNECTIVITY_RANGE}m of each other")
+    print(f"🌊 Ocean currents: Vortex field centered at [10, 0, z] with strength 0.3 (gentle)\n")
     
     iteration = 0
     max_iterations = 6000  # About 100 seconds at 60 ticks/sec (more time for obstacles)
     status_interval = 120   # Print status every 120 iterations (~2 seconds)
+    vector_field_drawn = False  # Flag to draw vector field once
     
     while iteration < max_iterations:
         # Get current states
         states = env.tick()
         
+        # Draw ocean current vector field visualization once after 120 iterations
+        if iteration == 120 and not vector_field_drawn:
+            env.draw_debug_vector_field(vortex_field, location=[10, 0, -5], 
+                                       vector_field_dimensions=map_dimensions, 
+                                       arrow_thickness=5, arrow_size=0.3, spacing=4)
+            print("✓ Ocean current vector field visualization drawn!")
+            vector_field_drawn = True
+        
         # Update real-time 3D visualization
         update_trajectories(states)
+        
+        # Apply ocean currents to all agents
+        for i, agent_name in enumerate(agent_names):
+            location = states[agent_name]["LocationSensor"]
+            current_velocity = vortex_field(location)
+            env.set_ocean_currents(agent_name, current_velocity)
         
         # Compute and apply CLF-CBF control for each agent (with obstacles)
         for i, agent_name in enumerate(agent_names):
