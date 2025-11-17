@@ -8,7 +8,64 @@ from matplotlib.animation import FuncAnimation
 from mpl_toolkits.mplot3d import Axes3D
 import threading
 
-# Configuration for 3 BlueROV2 agents in SimpleUnderwater
+# Number of agents
+NUM_AGENTS = 6
+
+def generate_random_spawn_locations(num_agents, obstacles_list):
+    """Generate random spawn locations for agents that don't overlap with obstacles"""
+    spawn_locations = []
+    min_spawn_distance = 3.0  # Minimum distance between agents at spawn
+    
+    for i in range(num_agents):
+        max_attempts = 100
+        for attempt in range(max_attempts):
+            # Random spawn in starting area
+            x = random.uniform(-5, 5)
+            y = random.uniform(-8, 8)
+            z = random.uniform(-8, -3)
+            
+            location = [x, y, z]
+            
+            # Check distance from obstacles
+            valid = True
+            for obs in obstacles_list:
+                if calculate_distance(location, obs["position"]) < obs["radius"] + 3.0:
+                    valid = False
+                    break
+            
+            # Check distance from other spawned agents
+            if valid:
+                for other_loc in spawn_locations:
+                    if calculate_distance(location, other_loc) < min_spawn_distance:
+                        valid = False
+                        break
+            
+            if valid:
+                spawn_locations.append(location)
+                break
+        
+        # Fallback if random generation fails
+        if len(spawn_locations) <= i:
+            spawn_locations.append([i * 3, 0, -5])
+    
+    return spawn_locations
+
+def calculate_distance(pos1, pos2):
+    """Calculate Euclidean distance between two positions"""
+    return np.linalg.norm(np.array(pos1) - np.array(pos2))
+
+# Obstacle positions and sizes [x, y, z, radius]
+# These will be drawn as spheres in the environment
+obstacles = [
+    {"position": [10, 0, -5], "radius": 2.0},   # Obstacle in the middle
+    {"position": [15, 3, -5], "radius": 1.5},   # Obstacle to the right
+    {"position": [12, -3, -5], "radius": 1.5},  # Obstacle to the left
+]
+
+# Generate random spawn locations
+spawn_locations = generate_random_spawn_locations(NUM_AGENTS, obstacles)
+
+# Configuration for multiple BlueROV2 agents in SimpleUnderwater
 config = {
     "name": "three_bluerov2_autonomous",
     "world": "SimpleUnderwater",
@@ -20,84 +77,29 @@ config = {
     "current": {
         "vehicle_debugging": True
     },
-    "agents": [
-        {
-            "agent_name": "auv0",
-            "agent_type": "BlueROV2",
-            "sensors": [
-                {
-                    "sensor_type": "IMUSensor"
-                },
-                {
-                    "sensor_type": "DVLSensor"
-                },
-                {
-                    "sensor_type": "LocationSensor"
-                },
-                {
-                    "sensor_type": "RotationSensor"
-                }
-            ],
-            "control_scheme": 0,
-            "location": [0, 0, -5],
-            "rotation": [0, 0, 0]
-        },
-        {
-            "agent_name": "auv1",
-            "agent_type": "BlueROV2",
-            "sensors": [
-                {
-                    "sensor_type": "IMUSensor"
-                },
-                {
-                    "sensor_type": "DVLSensor"
-                },
-                {
-                    "sensor_type": "LocationSensor"
-                },
-                {
-                    "sensor_type": "RotationSensor"
-                }
-            ],
-            "control_scheme": 0,
-            "location": [5, 0, -5],
-            "rotation": [0, 0, 0]
-        },
-        {
-            "agent_name": "auv2",
-            "agent_type": "BlueROV2",
-            "sensors": [
-                {
-                    "sensor_type": "IMUSensor"
-                },
-                {
-                    "sensor_type": "DVLSensor"
-                },
-                {
-                    "sensor_type": "LocationSensor"
-                },
-                {
-                    "sensor_type": "RotationSensor"
-                }
-            ],
-            "control_scheme": 0,
-            "location": [10, 0, -5],
-            "rotation": [0, 0, 0]
-        }
-    ]
+    "agents": []
 }
+
+# Dynamically create agent configurations
+for i in range(NUM_AGENTS):
+    agent_config = {
+        "agent_name": f"auv{i}",
+        "agent_type": "BlueROV2",
+        "sensors": [
+            {"sensor_type": "IMUSensor"},
+            {"sensor_type": "DVLSensor"},
+            {"sensor_type": "LocationSensor"},
+            {"sensor_type": "RotationSensor"}
+        ],
+        "control_scheme": 0,
+        "location": spawn_locations[i],
+        "rotation": [0, 0, 0]
+    }
+    config["agents"].append(agent_config)
 
 # Single shared goal for all agents [x, y, z]
 # Will be randomized at start
 shared_goal = None
-
-# Obstacle positions and sizes [x, y, z, radius]
-# These will be drawn as spheres in the environment
-obstacles = [
-    {"position": [10, 0, -5], "radius": 2.0},   # Obstacle in the middle
-    {"position": [15, 3, -5], "radius": 1.5},   # Obstacle to the right
-    {"position": [12, -3, -5], "radius": 1.5},  # Obstacle to the left
-]
 
 # Color for obstacles (RGB, 0-255)
 obstacle_color = [128, 128, 128]  # Gray color for obstacles
@@ -105,26 +107,44 @@ obstacle_color = [128, 128, 128]  # Gray color for obstacles
 # Color for the shared goal marker (RGB, 0-255)
 goal_color = [255, 215, 0]  # Gold color for shared goal
 
-# Individual agent colors for visualization
-agent_colors = [
-    [255, 0, 0],    # Red for auv0
-    [0, 255, 0],    # Green for auv1
-    [0, 0, 255]     # Blue for auv2
-]
+# Generate agent names dynamically
+agent_names = [f"auv{i}" for i in range(NUM_AGENTS)]
 
-agent_names = ["auv0", "auv1", "auv2"]
+# Generate distinct colors for each agent
+def generate_agent_colors(num_agents):
+    """Generate distinct colors for agents using HSV color space"""
+    colors = []
+    for i in range(num_agents):
+        hue = i / num_agents
+        # Convert HSV to RGB (simplified)
+        if hue < 1/6:
+            rgb = [255, int(hue * 6 * 255), 0]
+        elif hue < 2/6:
+            rgb = [int((2/6 - hue) * 6 * 255), 255, 0]
+        elif hue < 3/6:
+            rgb = [0, 255, int((hue - 2/6) * 6 * 255)]
+        elif hue < 4/6:
+            rgb = [0, int((4/6 - hue) * 6 * 255), 255]
+        elif hue < 5/6:
+            rgb = [int((hue - 4/6) * 6 * 255), 0, 255]
+        else:
+            rgb = [255, 0, int((1 - hue) * 6 * 255)]
+        colors.append(rgb)
+    return colors
+
+agent_colors = generate_agent_colors(NUM_AGENTS)
 
 # Data collection for plotting
 data_time = []
-data_distances_to_goal = [[], [], []]  # Distance to goal for each agent
-data_inter_agent_distances = [[], [], []]  # Distance to next agent in relay
-data_min_obstacle_distances = [[], [], []]  # Minimum distance to any obstacle
-data_velocities = [[], [], []]  # Velocity magnitude for each agent
+data_distances_to_goal = [[] for _ in range(NUM_AGENTS)]  # Distance to goal for each agent
+data_inter_agent_distances = [[] for _ in range(NUM_AGENTS)]  # Distance to next agent in relay
+data_min_obstacle_distances = [[] for _ in range(NUM_AGENTS)]  # Minimum distance to any obstacle
+data_velocities = [[] for _ in range(NUM_AGENTS)]  # Velocity magnitude for each agent
 data_connectivity_violations = []  # Count of connectivity violations over time
 
 # Real-time 3D trajectory tracking
-trajectory_history = [[], [], []]  # [x,y,z] positions over time for each agent
-current_positions = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]  # Current position of each agent
+trajectory_history = [[] for _ in range(NUM_AGENTS)]  # [x,y,z] positions over time for each agent
+current_positions = [[0, 0, 0] for _ in range(NUM_AGENTS)]  # Current position of each agent
 visualization_lock = threading.Lock()  # Thread safety for updating positions
 
 # Animation control (will be set by main loop)
@@ -200,10 +220,6 @@ def generate_random_goal():
     
     # Fallback goal if random generation fails
     return [20, 0, -5]
-
-def calculate_distance(pos1, pos2):
-    """Calculate Euclidean distance between two positions"""
-    return np.linalg.norm(np.array(pos1) - np.array(pos2))
 
 def clf_control(position, goal, velocity=None):
     """
@@ -347,23 +363,31 @@ def clf_cbf_controller(agent_idx, states, shared_goal, obstacles_list=None):
             obs_radius = obs["radius"]
             dist = calculate_distance(position, obs_pos)
             
-            if dist < (obs_radius + OBSTACLE_SAFETY * 2):  # Close to obstacle
+            # Start repulsion much earlier - at 3x the safety distance
+            activation_range = obs_radius + OBSTACLE_SAFETY * 3.0
+            
+            if dist < activation_range:  # In obstacle influence zone
                 repulsion_dir = np.array(position) - np.array(obs_pos)
                 
                 if dist > 0.1:
                     repulsion_dir = repulsion_dir / dist
-                    # Stronger repulsion when very close to obstacle
-                    clearance = max(0, obs_radius + OBSTACLE_SAFETY - dist)
-                    repulsion_strength = CBF_GAMMA * 2.0 * clearance / OBSTACLE_SAFETY
-                    u_repulsion += repulsion_strength * repulsion_dir
-                    if clearance > 0:
+                    # Much stronger repulsion with exponential growth as we get closer
+                    safe_dist = obs_radius + OBSTACLE_SAFETY
+                    if dist < safe_dist:
+                        # Critical zone - very strong repulsion
+                        repulsion_strength = CBF_GAMMA * 10.0 * (safe_dist - dist) / OBSTACLE_SAFETY
                         critical_count += 1
+                    else:
+                        # Warning zone - moderate repulsion
+                        repulsion_strength = CBF_GAMMA * 3.0 * (activation_range - dist) / (activation_range - safe_dist)
+                    
+                    u_repulsion += repulsion_strength * repulsion_dir
     
     # Blend CLF, CBF, and connectivity constraints
     if critical_count > 0:
-        # When close to obstacles/agents, balance avoidance with goal reaching
-        alpha = 0.5  # Balanced weight between goal and avoidance
-        u_desired = alpha * u_clf + (1 - alpha) * u_repulsion + 0.3 * u_connectivity
+        # When in critical zone near obstacles/agents, prioritize avoidance strongly
+        alpha = 0.3  # Give more weight to avoidance (70% avoidance, 30% goal)
+        u_desired = alpha * u_clf + (1 - alpha) * u_repulsion + 0.2 * u_connectivity
     elif connectivity_violations > 0:
         # Connectivity constraint active
         u_desired = 0.7 * u_clf + 0.3 * u_connectivity
@@ -412,17 +436,18 @@ def setup_realtime_visualization():
     fig = plt.figure(figsize=(12, 10))
     ax = fig.add_subplot(111, projection='3d')
     
-    colors = ['red', 'green', 'blue']
-    labels = ['AUV 0', 'AUV 1', 'AUV 2']
+    # Convert RGB 0-255 to 0-1 for matplotlib
+    colors = [[c[0]/255, c[1]/255, c[2]/255] for c in agent_colors]
+    labels = [f'AUV {i}' for i in range(NUM_AGENTS)]
     
     # Initialize plot elements
     agent_points = []
     trajectory_lines = []
     
-    for i in range(3):
+    for i in range(NUM_AGENTS):
         # Agent current position (larger marker)
-        point, = ax.plot([], [], [], 'o', color=colors[i], markersize=12, 
-                         label=labels[i], markeredgecolor='black', markeredgewidth=2)
+        point, = ax.plot([], [], [], 'o', color=colors[i], markersize=10, 
+                         label=labels[i], markeredgecolor='black', markeredgewidth=1.5)
         agent_points.append(point)
         
         # Trajectory trail
@@ -462,7 +487,7 @@ def setup_realtime_visualization():
             return agent_points + trajectory_lines
         
         with visualization_lock:
-            for i in range(3):
+            for i in range(NUM_AGENTS):
                 if len(trajectory_history[i]) > 0:
                     # Update current position
                     pos = current_positions[i]
@@ -521,29 +546,31 @@ def collect_data(states, goal, iteration):
 def plot_results():
     """Plot simulation results after completion"""
     fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    fig.suptitle('HoloOcean Multi-Agent CLF-CBF Control Results', fontsize=16, fontweight='bold')
+    fig.suptitle(f'HoloOcean Multi-Agent CLF-CBF Control Results ({NUM_AGENTS} Agents)', fontsize=16, fontweight='bold')
     
     time_data = np.array(data_time)
-    colors = ['red', 'green', 'blue']
-    labels = ['AUV 0', 'AUV 1', 'AUV 2']
+    # Convert colors to matplotlib format
+    colors = [[c[0]/255, c[1]/255, c[2]/255] for c in agent_colors]
+    labels = [f'AUV {i}' for i in range(NUM_AGENTS)]
     
     # Plot 1: Distance to Goal
     ax = axes[0, 0]
-    for i in range(3):
+    for i in range(NUM_AGENTS):
         ax.plot(time_data, data_distances_to_goal[i], color=colors[i], label=labels[i], linewidth=2)
     ax.axhline(y=GOAL_THRESHOLD, color='black', linestyle='--', label='Goal Threshold', linewidth=1)
     ax.set_xlabel('Time (s)', fontsize=11)
     ax.set_ylabel('Distance to Goal (m)', fontsize=11)
     ax.set_title('Goal Convergence', fontweight='bold')
-    ax.legend(loc='best')
+    if NUM_AGENTS <= 6:
+        ax.legend(loc='best')
     ax.grid(True, alpha=0.3)
     
     # Plot 2: Inter-Agent Distances
     ax = axes[0, 1]
-    for i in range(3):
-        next_idx = (i + 1) % 3
+    for i in range(NUM_AGENTS):
+        next_idx = (i + 1) % NUM_AGENTS
         ax.plot(time_data, data_inter_agent_distances[i], color=colors[i], 
-                label=f'{labels[i]} ↔ {labels[next_idx]}', linewidth=2)
+                label=f'{labels[i]} <-> {labels[next_idx]}', linewidth=2)
     ax.axhline(y=CONNECTIVITY_RANGE, color='red', linestyle='--', 
                label=f'Connectivity Limit ({CONNECTIVITY_RANGE}m)', linewidth=1.5)
     ax.axhline(y=CONNECTIVITY_RANGE*0.8, color='orange', linestyle=':', 
@@ -551,31 +578,30 @@ def plot_results():
     ax.set_xlabel('Time (s)', fontsize=11)
     ax.set_ylabel('Inter-Agent Distance (m)', fontsize=11)
     ax.set_title('Formation Connectivity', fontweight='bold')
-    ax.legend(loc='best', fontsize=9)
+    if NUM_AGENTS <= 4:
+        ax.legend(loc='best', fontsize=9)
     ax.grid(True, alpha=0.3)
     
     # Plot 3: Minimum Obstacle Clearance
     ax = axes[0, 2]
-    for i in range(3):
+    for i in range(NUM_AGENTS):
         ax.plot(time_data, data_min_obstacle_distances[i], color=colors[i], label=labels[i], linewidth=2)
     ax.axhline(y=OBSTACLE_SAFETY, color='red', linestyle='--', 
                label=f'Safety Threshold ({OBSTACLE_SAFETY}m)', linewidth=1.5)
     ax.set_xlabel('Time (s)', fontsize=11)
     ax.set_ylabel('Min Obstacle Distance (m)', fontsize=11)
     ax.set_title('Obstacle Avoidance', fontweight='bold')
-    ax.legend(loc='best')
+    if NUM_AGENTS <= 6:
+        ax.legend(loc='best')
     ax.grid(True, alpha=0.3)
     
     # Plot 4: Agent Velocities
     ax = axes[1, 0]
-    for i in range(3):
+    for i in range(NUM_AGENTS):
         ax.plot(time_data, data_velocities[i], color=colors[i], label=labels[i], linewidth=2)
     ax.set_xlabel('Time (s)', fontsize=11)
     ax.set_ylabel('Velocity Magnitude (m/s)', fontsize=11)
     ax.set_title('Agent Velocities', fontweight='bold')
-    ax.legend(loc='best')
-    ax.grid(True, alpha=0.3)
-    
     # Plot 5: Connectivity Violations
     ax = axes[1, 1]
     ax.plot(time_data, data_connectivity_violations, color='purple', linewidth=2)
@@ -590,12 +616,12 @@ def plot_results():
     ax.remove()  # Remove the 2D axes
     ax = fig.add_subplot(2, 3, 6, projection='3d')
     
-    # Reconstruct 3D trajectories from velocities (approximate)
-    for i in range(3):
-        # Use initial position and approximate trajectory from distance changes
-        start_pos = config['agents'][i]['location']
+    # Plot start positions for all agents
+    for i in range(NUM_AGENTS):
+        # Use initial position
+        start_pos = spawn_locations[i]
         ax.plot([start_pos[0]], [start_pos[1]], [start_pos[2]], 
-                marker='o', markersize=10, color=colors[i], label=f'{labels[i]} Start')
+                marker='o', markersize=8, color=colors[i], label=f'{labels[i]} Start')
     
     # Plot goal
     ax.scatter([shared_goal[0]], [shared_goal[1]], [shared_goal[2]], 
@@ -690,7 +716,8 @@ def print_status(states, shared_goal, iteration):
         
         # Agent color
         idx = agent_names.index(agent_name)
-        color = ["RED", "GREEN", "BLUE"][idx]
+        color_names = ["RED", "GREEN", "BLUE", "CYAN", "MAGENTA", "YELLOW", "ORANGE", "PURPLE", "PINK", "LIME"]
+        color = color_names[idx % len(color_names)]
         
         # Status indicators
         goal_status = "✓ AT GOAL" if distance_to_goal < GOAL_THRESHOLD else f"→ {distance_to_goal:5.2f}m away"
@@ -799,9 +826,10 @@ for i, obs in enumerate(obstacles, 1):
     rad = obs["radius"]
     print(f"  Obstacle {i}: Position=[{pos[0]:5.1f}, {pos[1]:5.1f}, {pos[2]:5.1f}], Radius={rad:.1f}m")
 print("\nAgent Starting Positions:")
+color_names = ["RED", "GREEN", "BLUE", "CYAN", "MAGENTA", "YELLOW", "ORANGE", "PURPLE", "PINK", "LIME"]
 for i, agent_name in enumerate(agent_names):
-    color = ["RED", "GREEN", "BLUE"][i]
-    print(f"  {agent_name.upper()}: {config['agents'][i]['location']} ({color})")
+    color_name = color_names[i % len(color_names)]  # Cycle through colors if more agents
+    print(f"  {agent_name.upper()}: {config['agents'][i]['location']} ({color_name})")
 
 input("\nPress ENTER to start the simulation...")
 
@@ -843,7 +871,7 @@ with holoocean.make(scenario_cfg=config) as env:
     
     # Draw arrow pointing to goal
     arrow_start = [shared_goal[0], shared_goal[1], shared_goal[2] + 3]
-    env.draw_arrow(start=arrow_start, end=shared_goal, color=goal_color, thickness=3.0, lifetime=0)
+    env.draw_arrow(start=arrow_start, end=shared_goal, color=goal_color, thickness=1.0, lifetime=0)
     
     # Draw agent trails to goal
     for i, agent_name in enumerate(agent_names):
@@ -876,7 +904,7 @@ with holoocean.make(scenario_cfg=config) as env:
     print(f"🌊 Ocean currents: Vortex field centered at [10, 0, z] with strength 0.3 (gentle)\n")
     
     iteration = 0
-    max_iterations = 6000  # About 100 seconds at 60 ticks/sec (more time for obstacles)
+    max_iterations = 15000  # About 250 seconds at 60 ticks/sec (more time for obstacles)
     status_interval = 120   # Print status every 120 iterations (~2 seconds)
     vector_field_drawn = False  # Flag to draw vector field once
     
